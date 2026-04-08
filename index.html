@@ -327,8 +327,6 @@
     </div>
   </header>
 
-  <!-- Nav removed -->
-
   <!-- ==================== BLESSING MESSAGE ==================== -->
   <section class="py-16 md:py-24 px-6">
     <div class="max-w-3xl mx-auto text-center">
@@ -361,6 +359,21 @@
       </a>
     </div>
   </section>
+
+  <!-- ==================== EVENT NAV ==================== -->
+  <nav id="eventNav" class="sticky top-0 z-50 bg-cream-100/95 backdrop-blur-md border-b border-gold-400/15 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3">
+      <div class="event-nav flex gap-2 overflow-x-auto snap-x snap-mandatory justify-start md:justify-center">
+        <button onclick="scrollToEvent('path')" data-event="path" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Paath</button>
+        <button onclick="scrollToEvent('mehdi')" data-event="mehdi" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Mehendi</button>
+        <button onclick="scrollToEvent('shagan')" data-event="shagan" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Shagan</button>
+        <button onclick="scrollToEvent('sangeet')" data-event="sangeet" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Sangeet</button>
+        <button onclick="scrollToEvent('vatna')" data-event="vatna" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Vatna</button>
+        <button onclick="scrollToEvent('wedding')" data-event="wedding" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Wedding</button>
+        <button onclick="scrollToEvent('reception')" data-event="reception" class="nav-pill snap-start shrink-0 px-5 py-2 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/10 tracking-[0.2em] uppercase">Reception</button>
+      </div>
+    </div>
+  </nav>
 
   <!-- ==================== EVENTS (warm cream sections) ==================== -->
   <main class="max-w-7xl mx-auto px-4 md:px-8 py-20">
@@ -410,12 +423,12 @@
   // ============================================================
   const CFG = {
     events: [
-      { id:'path', name:'Path', date:'January 19, 2026', desc:'The sacred beginning of the wedding festivities', icon:'<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 6C24 6 22 10 22 14C22 16.5 23 18 24 18C25 18 26 16.5 26 14C26 10 24 6 24 6Z" fill="#D4A855"/><path d="M24 18V34" stroke="#D4A855" stroke-width="1.5"/><ellipse cx="24" cy="36" rx="8" ry="3" stroke="#D4A855" stroke-width="1.2"/><path d="M16 36V40H32V36" stroke="#D4A855" stroke-width="1.2"/><circle cx="24" cy="12" r="2" fill="#D4A855" opacity="0.4"/><path d="M20 10C18 8 19 5 24 6" stroke="#D4A855" stroke-width="0.8" opacity="0.5"/><path d="M28 10C30 8 29 5 24 6" stroke="#D4A855" stroke-width="0.8" opacity="0.5"/></svg>', count:87,
+      { id:'path', name:'Paath', date:'January 19, 2026', desc:'The sacred beginning of the wedding festivities', icon:'<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 6C24 6 22 10 22 14C22 16.5 23 18 24 18C25 18 26 16.5 26 14C26 10 24 6 24 6Z" fill="#D4A855"/><path d="M24 18V34" stroke="#D4A855" stroke-width="1.5"/><ellipse cx="24" cy="36" rx="8" ry="3" stroke="#D4A855" stroke-width="1.2"/><path d="M16 36V40H32V36" stroke="#D4A855" stroke-width="1.2"/><circle cx="24" cy="12" r="2" fill="#D4A855" opacity="0.4"/><path d="M20 10C18 8 19 5 24 6" stroke="#D4A855" stroke-width="0.8" opacity="0.5"/><path d="M28 10C30 8 29 5 24 6" stroke="#D4A855" stroke-width="0.8" opacity="0.5"/></svg>', count:87,
         sides:{ girl:null, boy:{ link:'https://drive.google.com/drive/folders/144sBhp9suoPpJZ8LnqplNq59el2ZnEOo', photos:[
           {src:'assets/thumbnails/path/path_boy_1.jpg'},{src:'assets/thumbnails/path/path_boy_2.jpg'},{src:'assets/thumbnails/path/path_boy_3.jpg'},
           {src:'assets/thumbnails/path/path_boy_4.jpg'},{src:'assets/thumbnails/path/path_boy_5.jpg'},{src:'assets/thumbnails/path/path_boy_6.jpg'}
         ]}}},
-      { id:'mehdi', name:'Mehdi', date:'January 21, 2026', desc:'Vibrant henna celebrations filled with color and music', icon:'<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 42V22" stroke="#D4A855" stroke-width="1.2"/><path d="M24 22C24 22 14 20 10 12C10 12 18 10 24 22Z" fill="#D4A855" opacity="0.3" stroke="#D4A855" stroke-width="1"/><path d="M24 28C24 28 34 24 36 14C36 14 28 14 24 28Z" fill="#D4A855" opacity="0.3" stroke="#D4A855" stroke-width="1"/><path d="M24 18C24 18 20 14 22 8C22 8 26 10 24 18Z" fill="#D4A855" opacity="0.2" stroke="#D4A855" stroke-width="0.8"/><circle cx="15" cy="14" r="1.5" fill="#D4A855" opacity="0.3"/><circle cx="33" cy="17" r="1.5" fill="#D4A855" opacity="0.3"/><path d="M20 38C20 38 22 34 24 34C26 34 28 38 28 38" stroke="#D4A855" stroke-width="1" opacity="0.5"/></svg>', count:530,
+      { id:'mehdi', name:'Mehendi', date:'January 21, 2026', desc:'Vibrant henna celebrations filled with color and music', icon:'<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 42V22" stroke="#D4A855" stroke-width="1.2"/><path d="M24 22C24 22 14 20 10 12C10 12 18 10 24 22Z" fill="#D4A855" opacity="0.3" stroke="#D4A855" stroke-width="1"/><path d="M24 28C24 28 34 24 36 14C36 14 28 14 24 28Z" fill="#D4A855" opacity="0.3" stroke="#D4A855" stroke-width="1"/><path d="M24 18C24 18 20 14 22 8C22 8 26 10 24 18Z" fill="#D4A855" opacity="0.2" stroke="#D4A855" stroke-width="0.8"/><circle cx="15" cy="14" r="1.5" fill="#D4A855" opacity="0.3"/><circle cx="33" cy="17" r="1.5" fill="#D4A855" opacity="0.3"/><path d="M20 38C20 38 22 34 24 34C26 34 28 38 28 38" stroke="#D4A855" stroke-width="1" opacity="0.5"/></svg>', count:530,
         sides:{ girl:{ link:'https://drive.google.com/drive/folders/1V76_3Uo-KY8wKj0vLJ6iQmsyyL71WXML', photos:[
           {src:'assets/thumbnails/mehdi/mehdi_girl_1.jpg'},{src:'assets/thumbnails/mehdi/mehdi_girl_2.jpg'},{src:'assets/thumbnails/mehdi/mehdi_girl_3.jpg'},
           {src:'assets/thumbnails/mehdi/mehdi_girl_4.jpg'},{src:'assets/thumbnails/mehdi/mehdi_girl_5.jpg'},{src:'assets/thumbnails/mehdi/mehdi_girl_6.jpg'}

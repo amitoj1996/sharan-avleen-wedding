@@ -95,7 +95,7 @@ MAX_CENTROID_DIST = 0.35    # Remove faces too far from cluster centroid
 # Thumbnail params
 FACE_THUMB_SIZE = 150       # Face thumbnail px
 PHOTO_THUMB_WIDTH = 400     # Photo thumbnail width px
-MAX_PHOTO_THUMBS = 20       # Max photo thumbnails per cluster
+MAX_PHOTO_THUMBS = None     # Generate thumbnails for ALL photos per cluster
 
 CHECKPOINT_FILE = os.path.join(SCRIPTS_DIR, "checkpoint.pkl")
 EMBEDDINGS_FILE = os.path.join(SCRIPTS_DIR, "embeddings.pkl")
@@ -391,7 +391,7 @@ def generate_thumbnails(all_faces, sorted_clusters):
         photo_entries = []
         for pi, photo_face in enumerate(photos_list):
             thumb_path = None
-            if pi < MAX_PHOTO_THUMBS:
+            if MAX_PHOTO_THUMBS is None or pi < MAX_PHOTO_THUMBS:
                 try:
                     pimg = Image.open(photo_face["photo_path"])
                     pimg = ImageOps.exif_transpose(pimg)
