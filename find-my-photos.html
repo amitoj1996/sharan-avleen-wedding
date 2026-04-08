@@ -503,10 +503,14 @@
     document.getElementById('detailView').classList.add('view-fade-in');
     history.pushState({view:'person', id:clusterId}, '', `find-my-photos.html?person=${clusterId}`);
 
-    // Header
-    document.getElementById('personFace').src = currentCluster.thumbnail;
-    document.getElementById('personCount').textContent = `Found in ${currentCluster.photo_count} photos`;
-    document.getElementById('personEvents').textContent = `Across ${currentCluster.events.map(e => EVENT_NAMES[e]||e).join(', ')}`;
+    // Header — always rebuild to restore original structure
+    document.getElementById('personHeader').innerHTML = `
+      <img src="${currentCluster.thumbnail}" alt="" class="w-20 h-20 rounded-full border-2 border-gold-400/40 object-cover">
+      <div>
+        <p class="font-display text-2xl md:text-3xl text-burgundy-800 font-bold">Found in ${currentCluster.photo_count} photos</p>
+        <p class="font-ui text-[10px] text-burgundy-700/40 tracking-[0.15em] uppercase mt-1">Across ${currentCluster.events.map(e => EVENT_NAMES[e]||e).join(', ')}</p>
+      </div>
+    `;
 
     // Render all photos (no event filtering)
     renderPhotos();
