@@ -196,11 +196,11 @@
       <!-- Event filters (hidden — showing all photos together) -->
       <div class="hidden" id="eventFilters"></div>
 
-      <!-- Photo grid -->
-      <div id="personPhotos" class="masonry"></div>
+      <!-- Photos grouped by event -->
+      <div id="personPhotos"></div>
 
-      <!-- Drive links -->
-      <div id="driveLinks" class="mt-10 space-y-3"></div>
+      <!-- Drive links (unused) -->
+      <div id="driveLinks" class="hidden"></div>
     </div>
   </main>
 
@@ -312,52 +312,64 @@
 
   function renderPhotos() {
     const el = document.getElementById('personPhotos');
+    const driveEl = document.getElementById('driveLinks');
+    driveEl.innerHTML = ''; // Clear old links
+
     const photos = currentCluster.photos.filter(p => p.thumb);
 
-    el.innerHTML = photos.map((p, i) => `
-      <div class="masonry-item">
-        <div class="photo-card" onclick="openLb(${i})">
-          <img src="${p.thumb}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block">
-          <div class="overlay"></div>
-          <div class="absolute bottom-2 left-2 font-ui text-[8px] text-white/60 tracking-wider uppercase opacity-0 transition" style="transition:opacity 0.3s">${EVENT_NAMES[p.event]||p.event}</div>
-        </div>
-      </div>
-    `).join('');
-
-    // Show event label on hover
-    el.querySelectorAll('.photo-card').forEach(card => {
-      card.addEventListener('mouseenter', () => card.querySelector('.absolute')?.style.setProperty('opacity','1'));
-      card.addEventListener('mouseleave', () => card.querySelector('.absolute')?.style.setProperty('opacity','0'));
+    // Group photos by event
+    const eventOrder = ['mehdi','shagan','sangeet','vatna','wedding','reception','path'];
+    const grouped = {};
+    photos.forEach((p, globalIdx) => {
+      const key = p.event;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push({ ...p, globalIdx });
     });
+
+    // Build global index mapping for lightbox
+    const allPhotosFlat = [];
+    let html = '';
+
+    eventOrder.forEach(eventId => {
+      if (!grouped[eventId]) return;
+      const eventPhotos = grouped[eventId];
+      const startIdx = allPhotosFlat.length;
+
+      eventPhotos.forEach(p => allPhotosFlat.push(p));
+
+      html += `
+        <div class="mb-12">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="font-display text-2xl md:text-3xl text-burgundy-800 font-bold">${EVENT_NAMES[eventId] || eventId}</h3>
+              <p class="font-ui text-[9px] text-burgundy-700/40 tracking-[0.15em] uppercase mt-1">${eventPhotos.length} photos</p>
+            </div>
+          </div>
+          <div class="masonry">
+            ${eventPhotos.map((p, i) => `
+              <div class="masonry-item">
+                <div class="photo-card" onclick="openLb(${startIdx + i})">
+                  <img src="${p.thumb}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block">
+                  <div class="overlay"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    el.innerHTML = html;
+
+    // Store flat list for lightbox
+    window._allPersonPhotos = allPhotosFlat;
 
     // Observe items for viewport fade-in
     el.querySelectorAll('.masonry-item').forEach(item => photoObserver.observe(item));
   }
 
   function renderDriveLinks() {
-    const el = document.getElementById('driveLinks');
-    // Group photos by event+side
-    const groups = {};
-    const photos = currentCluster.photos;
-    photos.forEach(p => {
-      const key = `${p.event}_${p.side}`;
-      if (!groups[key]) groups[key] = { event:p.event, side:p.side, count:0 };
-      groups[key].count++;
-    });
-
-    el.innerHTML = Object.values(groups).map(g => `
-      <a href="event-gallery.html?event=${g.event}&side=${g.side}"
-         class="group flex items-center justify-between px-5 py-3 rounded-xl bg-cream-200/40 border border-gold-400/10 hover:border-gold-400/30 transition">
-        <div>
-          <span class="font-ui text-[10px] text-burgundy-800 font-medium tracking-wider uppercase">${EVENT_NAMES[g.event]||g.event}</span>
-          <span class="font-ui text-[9px] text-burgundy-700/40 ml-2">${g.side === 'girl' ? "Avleen's" : "Sharan's"} side &middot; ${g.count} photos</span>
-        </div>
-        <div class="flex items-center gap-1 text-gold-500/60 group-hover:text-gold-500 transition">
-          <span class="font-ui text-[9px] tracking-wider uppercase">View All Photos</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:translate-x-0.5 transition-transform"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </div>
-      </a>
-    `).join('');
+    // No longer needed — sections are inline
   }
 
   // ============================================================
@@ -366,7 +378,7 @@
   let lbPhotos=[], lbIdx=0;
 
   function openLb(idx) {
-    lbPhotos = currentCluster.photos.filter(p => p.thumb);
+    lbPhotos = window._allPersonPhotos || currentCluster.photos.filter(p => p.thumb);
     lbIdx = idx;
     updateLb();
     const lb = document.getElementById('lightbox');
