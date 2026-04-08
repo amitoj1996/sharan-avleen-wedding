@@ -324,14 +324,16 @@
 
     const grid = document.getElementById('faceGrid');
     grid.innerHTML = facesData.clusters.map((c, i) => `
-      <div class="face-card text-center" data-cluster="${c.id}" onclick="handleFaceClick('${c.id}', event)" style="animation-delay:${i*40}ms">
-        <div class="face-img w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50 relative">
-          <img src="${c.thumbnail}" alt="Guest" class="w-full h-full object-cover" loading="lazy">
-          <div class="select-check hidden absolute inset-0 bg-burgundy-800/50 flex items-center justify-center rounded-full">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+      <div class="face-card text-center" data-cluster="${c.id}" style="animation-delay:${i*40}ms">
+        <button type="button" onclick="handleFaceClick('${c.id}', event)" class="w-full bg-transparent border-0 p-0 cursor-pointer" style="-webkit-tap-highlight-color:transparent">
+          <div class="face-img w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50 relative pointer-events-none">
+            <img src="${c.thumbnail}" alt="Guest" class="w-full h-full object-cover" loading="lazy">
+            <div class="select-check hidden absolute inset-0 bg-burgundy-800/50 flex items-center justify-center rounded-full">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
           </div>
-        </div>
-        <p class="font-ui text-[9px] text-burgundy-700/50">${c.photo_count} photos</p>
+          <p class="font-ui text-[9px] text-burgundy-700/50 pointer-events-none">${c.photo_count} photos</p>
+        </button>
       </div>
     `).join('');
 
