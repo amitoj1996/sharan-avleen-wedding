@@ -248,6 +248,9 @@
     <button onclick="lightboxNav(1)" class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition p-2" aria-label="Next">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18l6-6-6-6"/></svg>
     </button>
+    <div id="lbSpinner" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
+    </div>
     <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="" onclick="event.stopPropagation()">
   </div>
 
@@ -650,12 +653,41 @@
   function updateLb() {
     const p=lbPhotos[lbIdx], img=document.getElementById('lightboxImg');
     const url = p.url || p.thumb;
-    // Use higher res for lightbox if it's a Drive URL
     const fullUrl = url.includes('lh3.googleusercontent.com') ? url.replace('=w400', '=w1600') : url;
-    img.classList.remove('lb-enter'); img.style.opacity=0;
-    setTimeout(()=>{ img.src=fullUrl; img.classList.add('lb-enter'); img.style.opacity=1; },80);
-    document.getElementById('lightboxCounter').textContent=`${lbIdx+1} / ${lbPhotos.length}`;
-    [-1,1].forEach(o=>{const i=(lbIdx+o+lbPhotos.length)%lbPhotos.length; new Image().src=lbPhotos[i].thumb;});
+
+    const spinner = document.getElementById('lbSpinner');
+
+    // Immediately hide old image and show spinner
+    img.style.opacity = 0;
+    img.classList.remove('lb-enter');
+    img.src = '';
+    spinner.style.display = 'flex';
+
+    document.getElementById('lightboxCounter').textContent = `${lbIdx+1} / ${lbPhotos.length}`;
+
+    // Preload new image, then reveal
+    const preload = new Image();
+    preload.onload = function() {
+      img.src = fullUrl;
+      spinner.style.display = 'none';
+      img.classList.add('lb-enter');
+      img.style.opacity = 1;
+    };
+    preload.onerror = function() {
+      img.src = p.url || p.thumb;
+      spinner.style.display = 'none';
+      img.classList.add('lb-enter');
+      img.style.opacity = 1;
+    };
+    preload.src = fullUrl;
+
+    // Preload adjacent images
+    [-1,1].forEach(o => {
+      const i = (lbIdx+o+lbPhotos.length) % lbPhotos.length;
+      const adjUrl = lbPhotos[i].url || lbPhotos[i].thumb;
+      const adjFull = adjUrl.includes('lh3.googleusercontent.com') ? adjUrl.replace('=w400', '=w1600') : adjUrl;
+      new Image().src = adjFull;
+    });
   }
 
   document.addEventListener('keydown',e=>{
