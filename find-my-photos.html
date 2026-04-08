@@ -179,10 +179,10 @@
       <div class="bg-burgundy-800/95 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl border border-burgundy-700/30">
         <p id="selectedCount" class="font-ui text-[11px] text-cream-100 tracking-wide"></p>
         <div class="flex gap-3">
-          <button onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
+          <button id="clearSelectionBtn" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
             Clear
           </button>
-          <button onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
+          <button id="findGroupBtn" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
             Find Group Photos
           </button>
         </div>
@@ -211,7 +211,7 @@
     <!-- Person Detail View -->
     <div id="detailView" class="hidden">
       <!-- Back button -->
-      <button onclick="showGrid()" class="font-ui text-[10px] text-gold-600 tracking-[0.15em] uppercase hover:text-burgundy-800 transition flex items-center gap-2 mb-8">
+      <button id="backToGridBtn" class="font-ui text-[10px] text-gold-600 tracking-[0.15em] uppercase hover:text-burgundy-800 transition flex items-center gap-2 mb-8">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         All Guests
       </button>
@@ -561,7 +561,6 @@
 
     // Render all photos (no event filtering)
     renderPhotos();
-    renderDriveLinks();
 
     // Scroll to top
     lenis.scrollTo(0, { immediate:true });
@@ -794,21 +793,25 @@
     threshold: 0.1
   });
 
-  // Button handlers — click works on Android, touchend fallback for iOS
-  document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.getElementById('selectModeBtn');
-    if (btn) {
-      let lastTap = 0;
-      function onSelectTap() {
-        const now = Date.now();
-        if (now - lastTap < 300) return;
-        lastTap = now;
-        toggleSelectMode();
-      }
-      btn.addEventListener('click', onSelectTap);
-      btn.addEventListener('touchend', function(e) { e.preventDefault(); onSelectTap(); }, { passive: false });
+  // Button handlers — attach immediately (no DOMContentLoaded, elements already exist above)
+  // Helper: attach both click and touchend with debounce for reliable mobile taps
+  function attachTapHandler(el, fn) {
+    if (!el) return;
+    let lastTap = 0;
+    function onTap() {
+      const now = Date.now();
+      if (now - lastTap < 300) return;
+      lastTap = now;
+      fn();
     }
-  });
+    el.addEventListener('click', onTap);
+    el.addEventListener('touchend', function(e) { e.preventDefault(); onTap(); }, { passive: false });
+  }
+
+  attachTapHandler(document.getElementById('selectModeBtn'), toggleSelectMode);
+  attachTapHandler(document.getElementById('clearSelectionBtn'), clearSelection);
+  attachTapHandler(document.getElementById('findGroupBtn'), showGroupPhotos);
+  attachTapHandler(document.getElementById('backToGridBtn'), showGrid);
 
   loadData();
   </script>
