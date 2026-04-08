@@ -80,6 +80,14 @@
     @media(min-width:1024px) { .photo-grid { column-count: 4; column-gap: 14px; } }
     .photo-item {
       break-inside: avoid; margin-bottom: 10px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      will-change: opacity, transform;
+    }
+    .photo-item.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
     @media(min-width:640px) { .photo-item { margin-bottom: 12px; } }
     @media(min-width:1024px) { .photo-item { margin-bottom: 14px; } }
@@ -398,12 +406,9 @@
       loadMoreEl.classList.add('hidden');
     }
 
-    // GSAP stagger entrance for newly added items
+    // Observe new items for viewport fade-in
     const newItems = Array.from(grid.children).slice(startIdx);
-    gsap.fromTo(newItems,
-      { opacity:0, y:20 },
-      { opacity:1, y:0, duration:0.6, stagger:0.03, ease:'power2.out' }
-    );
+    newItems.forEach(item => photoObserver.observe(item));
   }
 
   function loadNextBatch() {
@@ -538,6 +543,19 @@
   // ============================================================
   // INIT
   // ============================================================
+  // IntersectionObserver — fade in photos as they enter viewport
+  const photoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        photoObserver.unobserve(entry.target); // Only animate once
+      }
+    });
+  }, {
+    rootMargin: '50px 0px',  // Start slightly before entering viewport
+    threshold: 0.1
+  });
+
   loadData();
   </script>
 </body>
