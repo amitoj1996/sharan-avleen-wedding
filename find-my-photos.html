@@ -291,8 +291,11 @@
   // ============================================================
   // LOAD DATA
   // ============================================================
+  let driveIndex = {}; // filename → drive file ID
+
   async function loadData() {
     try {
+      // Load face data first (required), then drive index in background (for fallback URLs)
       const facesRes = await fetch('assets/data/faces_data.json');
       if (!facesRes.ok) throw new Error(`HTTP ${facesRes.status}`);
       facesData = await facesRes.json();
@@ -302,12 +305,23 @@
       // Check URL for deep link
       const params = new URLSearchParams(window.location.search);
       const personId = params.get('person');
-      const isGroup = params.get('group');
       if (personId && facesData.clusters.find(c => c.id === personId)) {
         showPerson(personId);
       } else {
         showGrid();
       }
+
+      // Load drive index in background (non-blocking) for photos without local thumbs
+      fetch('assets/data/drive_photos.json').then(r => r.ok ? r.json() : null).then(driveData => {
+        if (!driveData) return;
+        for (const key in driveData.events) {
+          const parts = key.split('_');
+          const event = parts[0], side = parts[1];
+          for (const photo of driveData.events[key]) {
+            driveIndex[`${side}_${event}_${photo.name.toLowerCase()}`] = photo.id;
+          }
+        }
+      }).catch(() => {});
     } catch(e) {
       document.getElementById('loadingState').innerHTML = `
         <p class="font-body text-lg text-burgundy-700/50 italic">Face data not yet available.</p>
@@ -317,7 +331,11 @@
   }
 
   function getPhotoUrl(photo) {
-    return photo.thumb || null;
+    if (photo.thumb) return photo.thumb;
+    const driveKey = `${photo.side}_${photo.event}_${photo.filename.toLowerCase()}`;
+    const driveId = driveIndex[driveKey];
+    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w400`;
+    return null;
   }
 
   // ============================================================
@@ -671,11 +689,23 @@
     container.appendChild(fragment);
     batch.rendered = end;
 
-    // Observe new items for fade-in
-    container.querySelectorAll('.masonry-item:not(.observed)').forEach(item => {
+    // Observe new items for fade-in, with fallback for items already in viewport
+    const newItems = container.querySelectorAll('.masonry-item:not(.observed)');
+    newItems.forEach(item => {
       item.classList.add('observed');
       photoObserver.observe(item);
     });
+    // Fallback: if observer hasn't fired after 300ms, force-show items (mobile reliability)
+    setTimeout(() => {
+      newItems.forEach(item => {
+        if (!item.classList.contains('visible')) {
+          const rect = item.getBoundingClientRect();
+          if (rect.top < window.innerHeight + 200) {
+            item.classList.add('visible');
+          }
+        }
+      });
+    }, 300);
   }
 
   // ============================================================
@@ -781,6 +811,7 @@
   gsap.fromTo('#pageHeader', {y:30,opacity:0},{y:0,opacity:1,duration:1,ease:'power3.out',delay:0.2});
 
   // IntersectionObserver — fade in photos as they enter viewport
+  // threshold:0 ensures items with zero height (before lazy images load) still trigger
   const photoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -789,8 +820,8 @@
       }
     });
   }, {
-    rootMargin: '50px 0px',
-    threshold: 0.1
+    rootMargin: '200px 0px',
+    threshold: 0
   });
 
   // Button handlers — attach immediately (no DOMContentLoaded, elements already exist above)
