@@ -188,16 +188,17 @@
     .side-btn { transition:all 0.3s ease; }
     .side-btn.active { background:linear-gradient(135deg,#7B1E3A,#9B1B30); color:white; box-shadow:0 4px 15px rgba(123,30,58,0.3); }
 
-    /* Bento Grid - no cropping, photos show in full */
+    /* Bento Grid — JS masonry, no cropping, photos show in full */
     .bento {
-      column-count: 2; column-gap: 10px;
+      position: relative;
     }
-    @media(min-width:768px) { .bento { column-count: 3; column-gap: 14px; } }
     .bento-item {
-      break-inside: avoid; margin-bottom: 10px;
+      position: absolute;
       border-radius: 8px; overflow: hidden;
     }
-    @media(min-width:768px) { .bento-item { margin-bottom: 14px; } }
+    .bento-item img {
+      width: 100%; height: auto; display: block;
+    }
 
     /* Photo card */
     .photo-card {
@@ -509,6 +510,70 @@
   }
 
   // ============================================================
+  // BENTO MASONRY LAYOUT
+  // ============================================================
+  function getBentoCols() { return window.innerWidth >= 768 ? 3 : 2; }
+  function getBentoGap() { return window.innerWidth >= 768 ? 14 : 10; }
+
+  function layoutBento(container) {
+    const cols = getBentoCols();
+    const gap = getBentoGap();
+    const containerWidth = container.clientWidth;
+    if (containerWidth === 0) return;
+    const colWidth = (containerWidth - gap * (cols - 1)) / cols;
+    const colHeights = new Array(cols).fill(0);
+
+    container.querySelectorAll('.bento-item').forEach(item => {
+      const shortest = colHeights.indexOf(Math.min(...colHeights));
+      item.style.width = colWidth + 'px';
+      item.style.left = (shortest * (colWidth + gap)) + 'px';
+      item.style.top = colHeights[shortest] + 'px';
+
+      const img = item.querySelector('img');
+      const h = (img && img.naturalHeight && img.naturalWidth)
+        ? (img.naturalHeight / img.naturalWidth) * colWidth
+        : colWidth * 0.75;
+      colHeights[shortest] += h + gap;
+    });
+
+    container.style.height = Math.max(...colHeights) + 'px';
+  }
+
+  // Debounced re-layout for image loads
+  const _bentoDirty = new Set();
+  let _bentoRaf = null;
+  function scheduleBentoRelayout(c) {
+    _bentoDirty.add(c);
+    if (_bentoRaf) return;
+    _bentoRaf = requestAnimationFrame(() => {
+      _bentoDirty.forEach(container => layoutBento(container));
+      _bentoDirty.clear();
+      _bentoRaf = null;
+    });
+  }
+
+  function initBentoGrids() {
+    document.querySelectorAll('.bento').forEach(container => {
+      layoutBento(container);
+      container.querySelectorAll('img').forEach(img => {
+        if (img.complete && img.naturalHeight) {
+          scheduleBentoRelayout(container);
+        } else {
+          img.addEventListener('load', () => scheduleBentoRelayout(container), { once: true });
+        }
+      });
+    });
+  }
+
+  let _bentoResizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_bentoResizeTimer);
+    _bentoResizeTimer = setTimeout(() => {
+      document.querySelectorAll('.bento').forEach(c => layoutBento(c));
+    }, 200);
+  });
+
+  // ============================================================
   // HERO ANIMATION (GSAP)
   // ============================================================
   gsap.registerPlugin(ScrollTrigger);
@@ -681,9 +746,15 @@
       btn.classList.toggle('border',!isA);
       btn.classList.toggle('border-gold-400/15',!isA);
     });
-    document.getElementById(`${eid}-${side}`)?.querySelectorAll('.photo-card').forEach((c,i)=>{
-      gsap.fromTo(c,{clipPath:'inset(100% 0 0 0)',opacity:0},{clipPath:'inset(0% 0 0 0)',opacity:1,duration:0.8,ease:'power3.inOut',delay:i*0.08});
-    });
+    // Re-layout bento grid for the newly visible side
+    const sideEl = document.getElementById(`${eid}-${side}`);
+    if (sideEl) {
+      const bento = sideEl.querySelector('.bento');
+      if (bento) layoutBento(bento);
+      sideEl.querySelectorAll('.photo-card').forEach((c,i)=>{
+        gsap.fromTo(c,{clipPath:'inset(100% 0 0 0)',opacity:0},{clipPath:'inset(0% 0 0 0)',opacity:1,duration:0.8,ease:'power3.inOut',delay:i*0.08});
+      });
+    }
   }
 
   let lbP=[],lbI=0,lbScrollY=0;
@@ -760,6 +831,7 @@
 
   document.addEventListener('DOMContentLoaded',()=>{
     render();
+    initBentoGrids();
     animateHero();
     initAnimations();
     CFG.events.forEach(e=>{const s=document.getElementById(e.id);if(s)navObs.observe(s);});
