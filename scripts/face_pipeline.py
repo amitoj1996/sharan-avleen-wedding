@@ -350,16 +350,7 @@ def generate_thumbnails(all_faces, sorted_clusters):
         photos_list = sorted(photo_map.values(), key=lambda x: -x["face_area"])
 
         # Pick best face for cluster thumbnail
-        # Score prioritizes: high confidence, large face, square aspect (frontal), prominent in frame
-        def face_thumb_score(x):
-            bbox = x["bbox"]
-            fw, fh = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            aspect = min(fw, fh) / max(fw, fh) if max(fw, fh) > 0 else 0  # 1.0 = square/frontal
-            img_area = x["img_size"][0] * x["img_size"][1] if x["img_size"][0] > 0 else 1
-            prominence = x["face_area"] / img_area  # How much of the frame the face fills
-            return x["det_score"] * (x["face_area"] ** 0.5) * (aspect ** 2) * (1 + prominence * 10)
-
-        best_face = max((all_faces[fi] for fi in face_indices), key=face_thumb_score)
+        best_face = max((all_faces[fi] for fi in face_indices), key=lambda x: x["det_score"] * x["face_area"])
 
         # Generate face thumbnail (cropped face)
         try:
