@@ -162,7 +162,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>
       </div>
       <h1 class="font-display text-4xl md:text-6xl lg:text-7xl text-burgundy-800 font-black mb-4">Find Your Photos</h1>
-      <p class="font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto">Tap a face to see their photos, or hold Ctrl and click multiple faces to find group photos</p>
+      <p class="font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto">Tap a face to see their photos</p>
     </div>
 
     <!-- Multi-select Action Bar -->
@@ -188,6 +188,13 @@
 
     <!-- Face Grid View -->
     <div id="gridView" class="hidden">
+      <div class="flex justify-center mb-8">
+        <button id="selectModeBtn" onclick="toggleSelectMode()"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-ui text-[10px] font-medium tracking-[0.15em] uppercase bg-cream-200/60 text-burgundy-800 border border-gold-400/15 hover:bg-burgundy-50 transition">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Find Group Photos
+        </button>
+      </div>
       <div id="faceGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-5 md:gap-6"></div>
       <p id="statsLine" class="text-center font-ui text-[10px] text-gold-500/40 tracking-[0.2em] uppercase mt-10"></p>
     </div>
@@ -249,6 +256,7 @@
   let currentCluster = null;
   let currentFilter = 'all';
   let selectedFaces = new Set(); // For multi-select mode
+  let selectMode = false; // Toggle for select mode
 
   const EVENT_NAMES = {
     path:'Path', mehdi:'Mehdi', shagan:'Shagan', sangeet:'Sangeet',
@@ -335,9 +343,29 @@
       { opacity:1, y:0, scale:1, duration:0.5, stagger:0.03, ease:'power2.out' });
   }
 
+  function toggleSelectMode() {
+    selectMode = !selectMode;
+    const btn = document.getElementById('selectModeBtn');
+    if (selectMode) {
+      btn.classList.remove('bg-cream-200/60', 'text-burgundy-800', 'border-gold-400/15');
+      btn.classList.add('bg-burgundy-800', 'text-cream-100', 'border-burgundy-700');
+      btn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Selecting — Tap faces to compare
+      `;
+    } else {
+      btn.classList.add('bg-cream-200/60', 'text-burgundy-800', 'border-gold-400/15');
+      btn.classList.remove('bg-burgundy-800', 'text-cream-100', 'border-burgundy-700');
+      btn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Find Group Photos
+      `;
+      clearSelection();
+    }
+  }
+
   function handleFaceClick(clusterId, event) {
-    // Long press or ctrl/cmd+click = toggle selection
-    if (event.ctrlKey || event.metaKey || selectedFaces.size > 0) {
+    if (selectMode || event.ctrlKey || event.metaKey) {
       toggleFaceSelection(clusterId);
     } else {
       showPerson(clusterId);
@@ -386,6 +414,16 @@
 
   function clearSelection() {
     selectedFaces.clear();
+    selectMode = false;
+    const btn = document.getElementById('selectModeBtn');
+    if (btn) {
+      btn.classList.add('bg-cream-200/60', 'text-burgundy-800', 'border-gold-400/15');
+      btn.classList.remove('bg-burgundy-800', 'text-cream-100', 'border-burgundy-700');
+      btn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Find Group Photos
+      `;
+    }
     updateSelectionUI();
   }
 
