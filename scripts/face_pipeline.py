@@ -87,9 +87,10 @@ MIN_FACE_SIZE = 40          # Skip faces smaller than this (px)
 CHECKPOINT_INTERVAL = 100   # Save progress every N photos
 
 # Clustering params
-DBSCAN_EPS = 0.45           # Cosine distance threshold
+DBSCAN_EPS = 0.32           # Cosine distance threshold (tighter = fewer false matches)
 DBSCAN_MIN_SAMPLES = 3      # Min photos per cluster
-MERGE_THRESHOLD = 0.85      # Cosine similarity to merge clusters
+MERGE_THRESHOLD = 0.90      # Cosine similarity to merge clusters (higher = fewer merges)
+MAX_CENTROID_DIST = 0.35    # Remove faces too far from cluster centroid
 
 # Thumbnail params
 FACE_THUMB_SIZE = 150       # Face thumbnail px
@@ -290,6 +291,28 @@ def cluster_faces(all_faces, eps=DBSCAN_EPS):
         del clusters[cid]
 
     print(f"After merging: {len(clusters)} clusters")
+
+    # Post-processing: remove faces too far from centroid (breaks chaining artifacts)
+    # Recompute centroids after merge
+    cleaned_count = 0
+    for cid in list(clusters.keys()):
+        indices = clusters[cid]
+        embs = embeddings_norm[indices]
+        centroid = np.mean(embs, axis=0)
+        centroid = centroid / np.linalg.norm(centroid)
+        dists = 1 - np.dot(embs, centroid)
+
+        # Keep only faces within MAX_CENTROID_DIST
+        keep = [idx for idx, d in zip(indices, dists) if d <= MAX_CENTROID_DIST]
+        removed = len(indices) - len(keep)
+        cleaned_count += removed
+
+        if len(keep) >= DBSCAN_MIN_SAMPLES:
+            clusters[cid] = keep
+        else:
+            del clusters[cid]
+
+    print(f"After centroid cleanup (max_dist={MAX_CENTROID_DIST}): {len(clusters)} clusters, {cleaned_count} faces removed")
 
     # Sort by photo count (unique photos) descending
     sorted_clusters = sorted(

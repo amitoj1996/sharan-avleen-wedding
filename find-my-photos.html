@@ -182,8 +182,8 @@
         </div>
       </div>
 
-      <!-- Event filters -->
-      <div class="flex gap-2 overflow-x-auto mb-10 pb-2" id="eventFilters" style="-ms-overflow-style:none;scrollbar-width:none;"></div>
+      <!-- Event filters (hidden — showing all photos together) -->
+      <div class="hidden" id="eventFilters"></div>
 
       <!-- Photo grid -->
       <div id="personPhotos" class="masonry"></div>
@@ -291,8 +291,7 @@
     document.getElementById('personCount').textContent = `Found in ${currentCluster.photo_count} photos`;
     document.getElementById('personEvents').textContent = `Across ${currentCluster.events.map(e => EVENT_NAMES[e]||e).join(', ')}`;
 
-    // Event filters
-    renderFilters();
+    // Render all photos (no event filtering)
     renderPhotos();
     renderDriveLinks();
 
@@ -300,30 +299,9 @@
     lenis.scrollTo(0, { immediate:true });
   }
 
-  function renderFilters() {
-    const el = document.getElementById('eventFilters');
-    const events = ['all', ...currentCluster.events];
-    el.innerHTML = events.map(e => `
-      <button onclick="filterEvent('${e}')"
-        class="filter-pill shrink-0 px-4 py-1.5 rounded-full font-ui text-[9px] tracking-[0.15em] uppercase
-               ${e===currentFilter ? 'active' : 'bg-cream-200/60 text-burgundy-800 border border-gold-400/15'}">
-        ${e === 'all' ? 'All Events' : EVENT_NAMES[e] || e}
-      </button>
-    `).join('');
-  }
-
-  function filterEvent(event) {
-    currentFilter = event;
-    renderFilters();
-    renderPhotos();
-    renderDriveLinks();
-  }
-
   function renderPhotos() {
     const el = document.getElementById('personPhotos');
-    const photos = currentFilter === 'all'
-      ? currentCluster.photos.filter(p => p.thumb)
-      : currentCluster.photos.filter(p => p.thumb && p.event === currentFilter);
+    const photos = currentCluster.photos.filter(p => p.thumb);
 
     el.innerHTML = photos.map((p, i) => `
       <div class="masonry-item">
@@ -351,7 +329,7 @@
     const el = document.getElementById('driveLinks');
     // Group photos by event+side
     const groups = {};
-    const photos = currentFilter === 'all' ? currentCluster.photos : currentCluster.photos.filter(p => p.event === currentFilter);
+    const photos = currentCluster.photos;
     photos.forEach(p => {
       const key = `${p.event}_${p.side}`;
       if (!groups[key]) groups[key] = { event:p.event, side:p.side, count:0 };
@@ -379,10 +357,7 @@
   let lbPhotos=[], lbIdx=0;
 
   function openLb(idx) {
-    const photos = currentFilter === 'all'
-      ? currentCluster.photos.filter(p => p.thumb)
-      : currentCluster.photos.filter(p => p.thumb && p.event === currentFilter);
-    lbPhotos = photos;
+    lbPhotos = currentCluster.photos.filter(p => p.thumb);
     lbIdx = idx;
     updateLb();
     const lb = document.getElementById('lightbox');
