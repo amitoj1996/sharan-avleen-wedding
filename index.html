@@ -346,6 +346,25 @@
     </div>
   </nav>
 
+  <!-- ==================== FIND MY PHOTOS CTA ==================== -->
+  <section class="relative py-16 md:py-20 overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-burgundy-900 via-burgundy-800 to-burgundy-900"></div>
+    <div class="absolute inset-0 opacity-10" style="background-image:url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a855' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;)"></div>
+    <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+      <div class="ornate-divider w-24 mx-auto mb-6">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>
+      </div>
+      <h2 class="font-display text-3xl md:text-5xl text-cream-50 font-black mb-4">Find Your Photos</h2>
+      <p class="font-body text-lg md:text-xl text-cream-100/50 italic max-w-lg mx-auto mb-8">Were you at the wedding? Tap your face and instantly see every photo you appear in</p>
+      <a href="find-my-photos.html"
+         class="group inline-flex items-center gap-3 px-10 py-4 rounded-full bg-gradient-to-r from-gold-400 to-gold-500 text-burgundy-950 font-ui text-[11px] md:text-xs font-bold tracking-[0.2em] uppercase shadow-xl hover:shadow-2xl hover:from-gold-300 hover:to-gold-400 transition-all duration-300 hover:scale-105">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <span>Find My Photos</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="group-hover:translate-x-1 transition-transform"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </section>
+
   <!-- ==================== EVENTS (warm cream sections) ==================== -->
   <main class="max-w-7xl mx-auto px-4 md:px-8 py-20">
     <div id="eventsContainer"></div>
@@ -515,7 +534,7 @@
 
   function renderSide(ev, side) {
     const d = ev.sides[side];
-    const sideName = side==='girl'?"Avleen's":"Sharan's";
+    const sideName = side==='girl'?"Bride's":"Groom's";
     if (!d.photos.length) return '<div class="text-center py-20"><p class="font-body text-lg text-burgundy-700/30 italic">Gallery coming soon</p></div>';
 
     const layouts = ['bento-a','bento-b','bento-c'];
@@ -542,13 +561,13 @@
         <div class="text-center pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <a href="event-gallery.html?event=${ev.id}&side=${side}"
              class="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-gold-400 to-gold-500 text-burgundy-950 font-ui text-[10px] font-semibold tracking-[0.15em] uppercase shadow-lg hover:shadow-xl hover:from-gold-300 hover:to-gold-400 transition-all duration-300">
-            <span>View All ${sideName} Photos</span>
+            <span>View ${sideName} ${ev.name} Photos</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:translate-x-1 transition-transform"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
           <a href="event-gallery.html?event=${ev.id}&side=${side}&type=videos"
              class="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-burgundy-800/90 text-cream-100 font-ui text-[10px] font-semibold tracking-[0.15em] uppercase shadow-lg hover:shadow-xl hover:bg-burgundy-700 transition-all duration-300">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <span>View All ${sideName} Videos</span>
+            <span>View ${sideName} ${ev.name} Videos</span>
           </a>
         </div>` : ''}
       </div>
