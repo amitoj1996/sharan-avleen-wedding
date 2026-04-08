@@ -260,6 +260,8 @@
     .eq-bar:nth-child(5){height:5px;animation-delay:0.2s}
     @keyframes eqBounce { 0%{height:3px} 100%{height:16px} }
     .music-paused .eq-bar { animation:none; height:3px!important; }
+    .music-loading .eq-bar { animation:eqPulse 1s ease-in-out infinite; height:8px!important; }
+    @keyframes eqPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
     .music-tooltip {
       position:absolute; right:62px; top:50%; transform:translateY(-50%);
       background:rgba(26,10,10,0.9); color:#D4A855; font-family:Poppins; font-size:10px;
@@ -792,25 +794,31 @@
   // ============================================================
   // MUSIC
   // ============================================================
-  let ytPlayer=null,musicPlaying=false,ytApiLoaded=false;
+  let ytPlayer=null,musicPlaying=false,ytApiLoaded=false,ytPlayerReady=false;
   function syncMusicUI(playing){
     musicPlaying=playing;
     const btn=document.getElementById('musicBtn'),tt=btn.querySelector('.music-tooltip');
+    btn.classList.remove('music-loading');
     btn.classList.toggle('music-playing',playing);btn.classList.toggle('music-paused',!playing);
     tt.textContent=playing?'Pause Music':'Play Music';
+    sessionStorage.setItem('musicPaused',playing?'false':'true');
+  }
+  function showMusicLoading(){
+    const btn=document.getElementById('musicBtn'),tt=btn.querySelector('.music-tooltip');
+    btn.classList.remove('music-paused');btn.classList.add('music-loading');
+    tt.textContent='Loading\u2026';
   }
   // Lazy-load YouTube API only when user clicks the music button (saves ~500KB on initial load)
   function loadYouTubeApi(){
     if(ytApiLoaded)return;ytApiLoaded=true;
     const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s);
   }
-  window.onYouTubeIframeAPIReady=function(){ytPlayer=new YT.Player('ytPlayer',{height:'0',width:'0',videoId:'AGsn2ycFRqI',playerVars:{autoplay:1,loop:1,playlist:'AGsn2ycFRqI',controls:0},events:{onReady:()=>{ytPlayer.setVolume(35);ytPlayer.playVideo();},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING)syncMusicUI(true);else if(e.data===YT.PlayerState.PAUSED)syncMusicUI(false);else if(e.data===YT.PlayerState.ENDED)ytPlayer.playVideo();}}});};
+  window.onYouTubeIframeAPIReady=function(){ytPlayer=new YT.Player('ytPlayer',{height:'0',width:'0',videoId:'eoz9gr9QYes',playerVars:{autoplay:1,loop:1,playlist:'eoz9gr9QYes',start:10,controls:0},events:{onReady:()=>{ytPlayer.setVolume(35);ytPlayer.playVideo();ytPlayerReady=true;},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING)syncMusicUI(true);else if(e.data===YT.PlayerState.PAUSED)syncMusicUI(false);else if(e.data===YT.PlayerState.ENDED)ytPlayer.playVideo();}}});};
   function toggleMusic(){
-    if(!ytApiLoaded){loadYouTubeApi();syncMusicUI(false);return;}
-    if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function')return;
-    const btn=document.getElementById('musicBtn'),tt=btn.querySelector('.music-tooltip');
-    if(musicPlaying){ytPlayer.pauseVideo();musicPlaying=false;btn.classList.remove('music-playing');btn.classList.add('music-paused');tt.textContent='Play Music';sessionStorage.setItem('musicPaused','true');}
-    else{ytPlayer.playVideo();musicPlaying=true;btn.classList.remove('music-paused');btn.classList.add('music-playing');tt.textContent='Pause Music';sessionStorage.setItem('musicPaused','false');}
+    if(!ytApiLoaded){loadYouTubeApi();showMusicLoading();return;}
+    if(!ytPlayerReady)return;
+    if(musicPlaying)ytPlayer.pauseVideo();
+    else ytPlayer.playVideo();
   }
 
   // ============================================================
@@ -828,6 +836,9 @@
       sessionStorage.setItem('galleryScrollY', window.scrollY.toString());
     }
   });
+
+  // Resume music if it was playing before page navigation
+  if(sessionStorage.getItem('musicPaused')==='false'){loadYouTubeApi();showMusicLoading();}
 
   document.addEventListener('DOMContentLoaded',()=>{
     render();
