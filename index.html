@@ -157,6 +157,9 @@
 
     /* Hero - dark editorial */
     .hero-image { object-fit:cover; object-position:center top; }
+    @media(min-width:768px){
+      .hero-image { object-fit:contain; object-position:center center; }
+    }
 
     /* Gold shimmer */
     @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
@@ -313,8 +316,8 @@
   <div id="scrollProgress" class="fixed top-0 left-0 z-[200]" style="width:0%"></div>
 
   <!-- ==================== HERO (dark editorial) ==================== -->
-  <header id="hero" class="relative h-screen overflow-hidden">
-    <div class="absolute inset-0">
+  <header id="hero" class="relative h-screen overflow-hidden bg-black">
+    <div class="absolute inset-0 bg-black">
       <img src="assets/hero.jpg" alt="Sharan & Avleen" class="hero-image w-full h-full" id="heroImg" width="1080" height="1440" fetchpriority="high" decoding="async">
       <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" id="heroOverlay"></div>
     </div>
