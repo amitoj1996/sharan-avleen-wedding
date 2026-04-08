@@ -97,7 +97,18 @@
     /* Masonry */
     .masonry { column-count:2; column-gap:10px; }
     @media(min-width:768px) { .masonry { column-count:3; column-gap:14px; } }
-    .masonry-item { break-inside:avoid; margin-bottom:10px; }
+    @media(min-width:1024px) { .masonry { column-count:4; column-gap:14px; } }
+    .masonry-item {
+      break-inside:avoid; margin-bottom:10px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      will-change: opacity, transform;
+    }
+    .masonry-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
     @media(min-width:768px) { .masonry-item { margin-bottom:14px; } }
 
     /* Nav pill */
@@ -319,10 +330,8 @@
       card.addEventListener('mouseleave', () => card.querySelector('.absolute')?.style.setProperty('opacity','0'));
     });
 
-    // GSAP stagger
-    gsap.fromTo('#personPhotos .masonry-item',
-      { clipPath:'inset(100% 0 0 0)', opacity:0 },
-      { clipPath:'inset(0% 0 0 0)', opacity:1, duration:0.8, stagger:0.06, ease:'power3.inOut' });
+    // Observe items for viewport fade-in
+    el.querySelectorAll('.masonry-item').forEach(item => photoObserver.observe(item));
   }
 
   function renderDriveLinks() {
@@ -406,6 +415,19 @@
   // ============================================================
   // Animate header
   gsap.fromTo('#pageHeader', {y:30,opacity:0},{y:0,opacity:1,duration:1,ease:'power3.out',delay:0.2});
+
+  // IntersectionObserver — fade in photos as they enter viewport
+  const photoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        photoObserver.unobserve(entry.target);
+      }
+    });
+  }, {
+    rootMargin: '50px 0px',
+    threshold: 0.1
+  });
 
   loadData();
   </script>
