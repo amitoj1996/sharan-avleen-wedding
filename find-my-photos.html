@@ -330,8 +330,8 @@
 
     const grid = document.getElementById('faceGrid');
     grid.innerHTML = facesData.clusters.map((c, i) => `
-      <div class="face-card text-center" data-cluster="${c.id}" style="animation-delay:${i*40}ms; cursor:pointer; -webkit-tap-highlight-color:transparent;">
-        <div class="face-img w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50 relative">
+      <div class="face-card text-center p-3" data-cluster="${c.id}" style="animation-delay:${i*40}ms; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+        <div class="face-img w-20 h-20 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50 relative">
           <img src="${c.thumbnail}" alt="Guest" class="w-full h-full object-cover" loading="lazy">
           <div class="select-check hidden absolute inset-0 bg-burgundy-800/50 flex items-center justify-center rounded-full">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
