@@ -350,15 +350,27 @@
       </div>
     `).join('');
 
-    // Use Pointer Events for unified touch+click handling (Safari 13.1+, all modern browsers)
+    // Click event with debounce — works on all browsers and devices
     if (!grid._listenersAttached) {
-      grid.addEventListener('pointerup', function(e) {
+      let lastTap = 0;
+      function onFaceTap(e) {
+        // Debounce: ignore if fired within 300ms (prevents double-fire from touch+click)
+        const now = Date.now();
+        if (now - lastTap < 300) return;
+        lastTap = now;
+        const card = e.target.closest('.face-card');
+        if (!card) return;
+        const cid = card.dataset.cluster;
+        if (cid) handleFaceClick(cid, e);
+      }
+      grid.addEventListener('click', onFaceTap);
+      // touchend fallback for iOS Safari where click sometimes doesn't fire
+      grid.addEventListener('touchend', function(e) {
         const card = e.target.closest('.face-card');
         if (!card) return;
         e.preventDefault();
-        const cid = card.dataset.cluster;
-        if (cid) handleFaceClick(cid, e);
-      });
+        onFaceTap(e);
+      }, { passive: false });
       grid._listenersAttached = true;
     }
 
@@ -682,12 +694,20 @@
     threshold: 0.1
   });
 
-  // Pointer event handlers for buttons (unified touch+click, works on all browsers)
+  // Button handlers — click works on Android, touchend fallback for iOS
   document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('selectModeBtn')?.addEventListener('pointerup', function(e) {
-      e.preventDefault();
-      toggleSelectMode();
-    });
+    const btn = document.getElementById('selectModeBtn');
+    if (btn) {
+      let lastTap = 0;
+      function onSelectTap() {
+        const now = Date.now();
+        if (now - lastTap < 300) return;
+        lastTap = now;
+        toggleSelectMode();
+      }
+      btn.addEventListener('click', onSelectTap);
+      btn.addEventListener('touchend', function(e) { e.preventDefault(); onSelectTap(); }, { passive: false });
+    }
   });
 
   loadData();
