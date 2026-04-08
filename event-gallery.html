@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery — Sharan & Avleen Wedding</title>
+  <meta name="description" content="Photo gallery from Sharan & Avleen's wedding celebration">
+  <meta name="theme-color" content="#7B1E3A">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            burgundy: { 50:'#fdf2f4',100:'#fce7eb',200:'#f9d0d9',300:'#f4a9ba',400:'#ec7696',500:'#df4b74',600:'#c9295a',700:'#a91d49',800:'#7B1E3A',900:'#6b1a33',950:'#3d0a1a' },
+            gold: { 50:'#fdfaef',100:'#faf2d0',200:'#f4e29d',300:'#edce6a',400:'#D4A855',500:'#d4a037',600:'#b8822a',700:'#956224',800:'#7a4f24',900:'#664221' },
+            cream: { 50:'#FFFDF7',100:'#FDF5E6',200:'#faecd0',300:'#f5ddb0' },
+          },
+          fontFamily: {
+            display: ['"Playfair Display"','Georgia','serif'],
+            body: ['"Cormorant Garamond"','Georgia','serif'],
+            ui: ['Poppins','system-ui','sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+
+  <style>
+    html.lenis, html.lenis body { height:auto; }
+    .lenis.lenis-smooth { scroll-behavior:auto!important; }
+    body { font-family:'Cormorant Garamond',Georgia,serif; overflow-x:hidden; }
+
+    /* Damask */
+    .damask-bg {
+      background-color: #FDF5E6;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a855' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    /* Grain */
+    .grain-overlay::after {
+      content:''; position:fixed; inset:0; z-index:100; pointer-events:none; opacity:0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat:repeat; background-size:256px 256px;
+    }
+
+    /* Floating orbs */
+    .orb { position:fixed; border-radius:50%; pointer-events:none; z-index:0; filter:blur(80px); opacity:0.1; will-change:transform; }
+    .orb-1 { width:400px; height:400px; top:-5%; right:-10%; background:radial-gradient(circle,#D4A855,transparent 70%); animation:orbF1 25s ease-in-out infinite; }
+    .orb-2 { width:350px; height:350px; bottom:10%; left:-10%; background:radial-gradient(circle,#7B1E3A,transparent 70%); animation:orbF2 30s ease-in-out infinite; }
+    @keyframes orbF1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,80px)} }
+    @keyframes orbF2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(50px,-60px)} }
+
+    /* Ornate divider */
+    .ornate-divider { display:flex; align-items:center; gap:16px; }
+    .ornate-divider::before,.ornate-divider::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,#D4A855,transparent); }
+
+    /* Gold shimmer */
+    @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+    .gold-shimmer {
+      background:linear-gradient(90deg,#D4A855 0%,#f5e6b8 20%,#D4A855 40%,#f5e6b8 60%,#D4A855 80%);
+      background-size:200% auto; -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; animation:shimmer 8s linear infinite;
+    }
+
+    /* Photo grid */
+    .photo-grid {
+      column-count: 2; column-gap: 10px;
+    }
+    @media(min-width:640px) { .photo-grid { column-count: 3; column-gap: 12px; } }
+    @media(min-width:1024px) { .photo-grid { column-count: 4; column-gap: 14px; } }
+    .photo-item {
+      break-inside: avoid; margin-bottom: 10px;
+    }
+    @media(min-width:640px) { .photo-item { margin-bottom: 12px; } }
+    @media(min-width:1024px) { .photo-item { margin-bottom: 14px; } }
+
+    /* Photo card */
+    .photo-card {
+      position:relative; overflow:hidden; border-radius:8px; cursor:pointer;
+      background: #f0e6d4;
+    }
+    .photo-card img {
+      transition:transform 1s cubic-bezier(0.25,0.46,0.45,0.94);
+      display:block; width:100%;
+    }
+    .photo-card:hover img { transform:scale(1.05); }
+    .photo-card .overlay {
+      position:absolute; inset:0;
+      background:linear-gradient(to top, rgba(123,30,58,0.4) 0%, transparent 40%);
+      opacity:0; transition:opacity 0.5s ease;
+    }
+    .photo-card:hover .overlay { opacity:1; }
+
+    /* Lightbox */
+    .lb-enter { animation: lbZoom 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+    @keyframes lbZoom { 0%{transform:scale(0.85);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #f0e6d4 25%, #faf2d0 50%, #f0e6d4 75%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.5s ease-in-out infinite;
+      border-radius: 8px;
+    }
+    @keyframes skeletonShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Loading spinner */
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-spinner { animation:spin 1s linear infinite; }
+
+    /* Scroll to top */
+    .scroll-top-btn {
+      transition: all 0.3s ease;
+      opacity: 0; pointer-events: none;
+    }
+    .scroll-top-btn.visible { opacity: 1; pointer-events: auto; }
+
+    @media(prefers-reduced-motion:reduce) {
+      .photo-card img { transition:none; }
+      .orb { display:none; }
+      .grain-overlay::after { display:none; }
+    }
+  </style>
+</head>
+
+<body class="damask-bg text-gray-900 grain-overlay">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Top Bar -->
+  <nav class="sticky top-0 z-50 bg-cream-100/95 backdrop-blur-md border-b border-gold-400/15 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" onclick="event.preventDefault(); if(document.referrer.includes('index.html')||document.referrer.endsWith('/')){history.back();}else{location.href='index.html';}" class="font-ui text-[10px] text-gold-600 tracking-[0.15em] uppercase hover:text-burgundy-800 transition flex items-center gap-2 cursor-pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Gallery
+      </a>
+      <span class="font-display text-lg text-burgundy-800 italic">S & A</span>
+      <a href="find-my-photos.html" class="font-ui text-[10px] text-gold-600 tracking-[0.15em] uppercase hover:text-burgundy-800 transition flex items-center gap-1.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Find Me
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 md:px-8 py-12">
+
+    <!-- Header -->
+    <div class="text-center mb-12" id="pageHeader">
+      <div class="ornate-divider w-32 mx-auto mb-6">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>
+      </div>
+      <h1 id="eventTitle" class="font-display text-4xl md:text-6xl text-burgundy-800 font-black mb-3"></h1>
+      <p id="eventDesc" class="font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto"></p>
+      <p id="photoCount" class="font-ui text-[10px] text-gold-500/50 tracking-[0.2em] uppercase mt-4"></p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-20">
+      <div class="w-10 h-10 border-2 border-gold-400/30 border-t-gold-400 rounded-full loading-spinner mx-auto mb-4"></div>
+      <p class="font-ui text-[10px] text-burgundy-700/40 tracking-[0.2em] uppercase">Loading photos...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden text-center py-20">
+      <p class="font-body text-lg text-burgundy-700/50 italic">Could not load photos.</p>
+      <p class="font-ui text-[10px] text-burgundy-700/30 mt-2">The photo data file may not be generated yet.</p>
+    </div>
+
+    <!-- Photo Grid -->
+    <div id="photoGrid" class="photo-grid hidden"></div>
+
+    <!-- Load More -->
+    <div id="loadMore" class="hidden text-center mt-10">
+      <button onclick="loadNextBatch()" class="px-8 py-3 rounded-full font-ui text-[10px] font-medium text-burgundy-800 bg-cream-200/70 hover:bg-burgundy-50 border border-gold-400/15 tracking-[0.2em] uppercase transition hover:shadow-md">
+        Load More Photos
+      </button>
+      <p id="loadMoreCount" class="font-ui text-[9px] text-burgundy-700/30 mt-2"></p>
+    </div>
+  </main>
+
+  <!-- Scroll to Top -->
+  <button id="scrollTopBtn" onclick="lenis.scrollTo(0)" class="scroll-top-btn fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-burgundy-800/80 text-white/80 hover:bg-burgundy-700 shadow-lg flex items-center justify-center transition">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md hidden items-center justify-center" onclick="closeLightbox(event)">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 z-10 text-white/50 hover:text-white transition-all hover:rotate-90 duration-300 p-2" aria-label="Close">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="lightboxCounter" class="absolute top-5 left-1/2 -translate-x-1/2 font-ui text-[10px] text-white/30 tracking-[0.3em]"></div>
+    <button onclick="lightboxNav(-1)" class="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition p-2" aria-label="Previous">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button onclick="lightboxNav(1)" class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition p-2" aria-label="Next">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center">
+      <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
+    </div>
+    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="" onclick="event.stopPropagation()">
+    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[88vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen onclick="event.stopPropagation()"></iframe>
+  </div>
+
+  <script>
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Lenis smooth scroll
+  const lenis = new Lenis({ duration:1.3, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)) });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t=>lenis.raf(t*1000));
+  gsap.ticker.lagSmoothing(0);
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const EVENT_META = {
+    path:      { name:'Path',      desc:'The sacred beginning of the wedding festivities' },
+    mehdi:     { name:'Mehdi',     desc:'Vibrant henna celebrations filled with color and music' },
+    shagan:    { name:'Shagan',    desc:'Blessings and gifts shared between families' },
+    sangeet:   { name:'Sangeet',   desc:'A night of dance, music, and unforgettable performances' },
+    vatna:     { name:'Vatna',     desc:'The turmeric ceremony \u2014 blessings for a radiant glow' },
+    wedding:   { name:'Wedding',   desc:'The grand union \u2014 where two hearts become one' },
+    reception: { name:'Reception', desc:'An evening of elegance, celebrating together as one' }
+  };
+
+  const SIDE_LABELS = { girl: "Avleen's Side", boy: "Sharan's Side" };
+  const BATCH_SIZE = 60;
+
+  // Google Drive URL helpers
+  function driveThumb(fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}=w400`;
+  }
+  function driveFull(fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}=w1600`;
+  }
+  function driveVideoPreview(fileId) {
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+  function driveVideoView(fileId) {
+    return `https://drive.google.com/file/d/${fileId}/view`;
+  }
+  function driveVideoThumb(fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}=w400`;
+  }
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  let allPhotos = [];
+  let displayedCount = 0;
+  let currentEvent = '';
+  let currentSide = '';
+  let currentType = 'photos'; // 'photos' or 'videos'
+
+  // ============================================================
+  // PARSE URL PARAMS
+  // ============================================================
+  const params = new URLSearchParams(window.location.search);
+  currentEvent = params.get('event') || '';
+  currentSide = params.get('side') || '';
+  currentType = params.get('type') || 'photos';
+
+  // ============================================================
+  // SET HEADER
+  // ============================================================
+  const meta = EVENT_META[currentEvent];
+  const isVideos = currentType === 'videos';
+  if (meta) {
+    document.getElementById('eventTitle').textContent = meta.name + (isVideos ? ' Videos' : '');
+    document.getElementById('eventDesc').textContent = meta.desc;
+    document.title = `${meta.name}${isVideos ? ' Videos' : ''} — Sharan & Avleen Wedding`;
+    if (currentSide) {
+      document.getElementById('eventDesc').textContent =
+        `${SIDE_LABELS[currentSide] || currentSide} \u2014 ${meta.desc}`;
+    }
+  } else {
+    document.getElementById('eventTitle').textContent = isVideos ? 'Videos' : 'Gallery';
+  }
+
+  // Animate header
+  gsap.fromTo('#pageHeader', {y:30,opacity:0},{y:0,opacity:1,duration:1,ease:'power3.out',delay:0.2});
+
+  // ============================================================
+  // LOAD DATA
+  // ============================================================
+  async function loadData() {
+    try {
+      const res = await fetch('assets/data/drive_photos.json');
+      if (!res.ok) throw new Error('File not found');
+      const data = await res.json();
+
+      const eventKey = `${currentEvent}_${currentSide}`;
+      const source = isVideos ? (data.videos || {}) : data.events;
+      allPhotos = source[eventKey] || [];
+
+      if (allPhotos.length === 0) {
+        // Try without side (maybe both sides combined)
+        const combined = [];
+        for (const key in source) {
+          if (key.startsWith(currentEvent + '_')) {
+            combined.push(...source[key]);
+          }
+        }
+        allPhotos = combined;
+      }
+
+      document.getElementById('loadingState').classList.add('hidden');
+
+      if (allPhotos.length === 0) {
+        document.getElementById('errorState').classList.remove('hidden');
+        document.getElementById('errorState').querySelector('p').textContent = 'No photos found for this event.';
+        return;
+      }
+
+      document.getElementById('photoCount').textContent =
+        `${allPhotos.length.toLocaleString()} ${isVideos ? 'videos' : 'photos'}`;
+
+      renderBatch();
+
+    } catch(e) {
+      console.error('Error loading drive_photos.json:', e);
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('errorState').classList.remove('hidden');
+    }
+  }
+
+  // ============================================================
+  // RENDER PHOTOS IN BATCHES
+  // ============================================================
+  function renderBatch() {
+    const grid = document.getElementById('photoGrid');
+    grid.classList.remove('hidden');
+
+    const startIdx = displayedCount;
+    const end = Math.min(startIdx + BATCH_SIZE, allPhotos.length);
+    const fragment = document.createDocumentFragment();
+
+    for (let i = startIdx; i < end; i++) {
+      const photo = allPhotos[i];
+      const div = document.createElement('div');
+      div.className = 'photo-item';
+
+      if (isVideos) {
+        div.innerHTML = `
+          <div class="photo-card" onclick="openLb(${i})">
+            <img src="assets/video_thumbs/${photo.id}.webp"
+                 alt="${photo.name}"
+                 loading="lazy"
+                 decoding="async"
+                 onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'aspect-video bg-gradient-to-br from-burgundy-900 to-burgundy-950 flex flex-col items-center justify-center gap-3 p-4\\'><div class=\\'w-14 h-14 bg-white/10 rounded-full flex items-center justify-center\\'><svg width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\' fill=\\'white\\' opacity=\\'0.7\\'><path d=\\'M8 5v14l11-7z\\'/></svg></div><p class=\\'font-ui text-[9px] text-white/40 tracking-wider\\'>${photo.name}</p></div>'">
+            <div class="overlay"></div>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div class="w-14 h-14 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" opacity="0.9"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="photo-card" onclick="openLb(${i})">
+            <img src="${driveThumb(photo.id)}"
+                 alt="${photo.name}"
+                 loading="lazy"
+                 decoding="async"
+                 onerror="this.parentElement.style.display='none'">
+            <div class="overlay"></div>
+          </div>
+        `;
+      }
+
+      fragment.appendChild(div);
+    }
+
+    grid.appendChild(fragment);
+    displayedCount = end;
+
+    // Show/hide load more button
+    const loadMoreEl = document.getElementById('loadMore');
+    const mediaLabel = isVideos ? 'videos' : 'photos';
+    if (displayedCount < allPhotos.length) {
+      loadMoreEl.classList.remove('hidden');
+      document.getElementById('loadMoreCount').textContent =
+        `Showing ${displayedCount} of ${allPhotos.length} ${mediaLabel}`;
+    } else {
+      loadMoreEl.classList.add('hidden');
+    }
+
+    // GSAP stagger entrance for newly added items
+    const newItems = Array.from(grid.children).slice(startIdx);
+    gsap.fromTo(newItems,
+      { opacity:0, y:20 },
+      { opacity:1, y:0, duration:0.6, stagger:0.03, ease:'power2.out' }
+    );
+  }
+
+  function loadNextBatch() {
+    renderBatch();
+  }
+
+  // ============================================================
+  // INFINITE SCROLL (optional, alongside Load More button)
+  // ============================================================
+  let scrollLoading = false;
+  window.addEventListener('scroll', () => {
+    if (scrollLoading || displayedCount >= allPhotos.length) return;
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
+      scrollLoading = true;
+      renderBatch();
+      setTimeout(() => scrollLoading = false, 300);
+    }
+  });
+
+  // Scroll to top button visibility
+  window.addEventListener('scroll', () => {
+    const btn = document.getElementById('scrollTopBtn');
+    if (window.scrollY > 600) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+  });
+
+  // ============================================================
+  // LIGHTBOX
+  // ============================================================
+  let lbIdx = 0;
+
+  function openLb(idx) {
+    lbIdx = idx;
+    updateLb();
+    const lb = document.getElementById('lightbox');
+    lb.classList.remove('hidden'); lb.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    lenis.stop();
+  }
+
+  function closeLightbox(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('lightbox').classList.add('hidden');
+    document.getElementById('lightbox').classList.remove('flex');
+    // Stop video playback
+    const video = document.getElementById('lightboxVideo');
+    video.src = '';
+    video.classList.add('hidden');
+    document.body.style.overflow = '';
+    lenis.start();
+  }
+
+  function lightboxNav(d) {
+    lbIdx = (lbIdx + d + allPhotos.length) % allPhotos.length;
+    updateLb();
+  }
+
+  function updateLb() {
+    const photo = allPhotos[lbIdx];
+    const img = document.getElementById('lightboxImg');
+    const video = document.getElementById('lightboxVideo');
+    const loading = document.getElementById('lightboxLoading');
+
+    if (isVideos) {
+      // Show video player, hide image
+      img.classList.add('hidden');
+      img.style.opacity = 0;
+      video.classList.remove('hidden');
+      video.classList.remove('lb-enter');
+      loading.style.display = 'flex';
+
+      video.src = driveVideoPreview(photo.id);
+      video.onload = () => { loading.style.display = 'none'; };
+      setTimeout(() => {
+        video.classList.add('lb-enter');
+        loading.style.display = 'none';
+      }, 500);
+    } else {
+      // Show image, hide video
+      video.classList.add('hidden');
+      video.src = '';
+      img.classList.remove('hidden');
+      img.classList.remove('lb-enter');
+      img.style.opacity = 0;
+      loading.style.display = 'flex';
+
+      const fullUrl = driveFull(photo.id);
+      const preload = new Image();
+      preload.onload = () => {
+        img.src = fullUrl;
+        img.classList.add('lb-enter');
+        img.style.opacity = 1;
+        loading.style.display = 'none';
+      };
+      preload.onerror = () => {
+        img.src = driveThumb(photo.id);
+        img.classList.add('lb-enter');
+        img.style.opacity = 1;
+        loading.style.display = 'none';
+      };
+      preload.src = fullUrl;
+
+      // Preload adjacent images
+      [-1, 1].forEach(o => {
+        const i = (lbIdx + o + allPhotos.length) % allPhotos.length;
+        new Image().src = driveFull(allPhotos[i].id);
+      });
+    }
+
+    document.getElementById('lightboxCounter').textContent =
+      `${lbIdx + 1} / ${allPhotos.length.toLocaleString()}`;
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('lightbox').classList.contains('hidden')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxNav(-1);
+    if (e.key === 'ArrowRight') lightboxNav(1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.getElementById('lightbox').addEventListener('touchstart', e => {
+    tx = e.changedTouches[0].screenX;
+  }, {passive:true});
+  document.getElementById('lightbox').addEventListener('touchend', e => {
+    const d = e.changedTouches[0].screenX - tx;
+    if (Math.abs(d) > 50) lightboxNav(d > 0 ? -1 : 1);
+  }, {passive:true});
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  loadData();
+  </script>
+</body>
+</html>

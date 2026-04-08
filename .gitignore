@@ -1,0 +1,12 @@
+# Scripts & build artifacts (not needed for website)
+scripts/checkpoint.pkl
+scripts/embeddings.pkl
+scripts/*.pyc
+scripts/__pycache__/
+
+# Claude config
+.claude/
+
+# Temp files
+.tmp.driveupload/
+*.tmp
