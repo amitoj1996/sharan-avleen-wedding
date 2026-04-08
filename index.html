@@ -405,7 +405,7 @@
     <button onclick="lightboxNav(1)" class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition p-2 hover:bg-white/5 rounded-full" aria-label="Next">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18l6-6-6-6"/></svg>
     </button>
-    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="" onclick="event.stopPropagation()">
+    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="">
   </div>
 
   <!-- Music -->
@@ -473,21 +473,30 @@
     gsap.ticker.add(t=>lenis.raf(t*1000));
     gsap.ticker.lagSmoothing(0);
   } else {
-    lenis = { scrollTo: (y, opts) => window.scrollTo(0, typeof y === 'number' ? y : 0), stop: ()=>{}, start: ()=>{} };
+    lenis = {
+      scrollTo: (target, opts) => {
+        const el = typeof target === 'string' ? document.querySelector(target) : null;
+        const y = el ? el.getBoundingClientRect().top + window.scrollY + (opts?.offset || 0) : (typeof target === 'number' ? target : 0);
+        window.scrollTo({ top: y, behavior: opts?.immediate ? 'instant' : 'smooth' });
+      },
+      stop: ()=>{}, start: ()=>{}
+    };
   }
 
   // ============================================================
-  // CURSOR
+  // CURSOR (desktop only — skip rAF loop on mobile to save battery)
   // ============================================================
   const dot = document.getElementById('cursorDot');
-  let mx=0,my=0,dx=0,dy=0;
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-  function animCursor(){dx+=(mx-dx)*0.15;dy+=(my-dy)*0.15;dot.style.transform=`translate(${dx-4}px,${dy-4}px)`;requestAnimationFrame(animCursor);}
-  animCursor();
-  document.addEventListener('mouseover',e=>{
-    if(e.target.closest('.photo-card,.nav-pill,.side-btn,.music-btn,a,button')) dot.classList.add('hover');
-    else dot.classList.remove('hover');
-  });
+  if (!isMobile) {
+    let mx=0,my=0,dx=0,dy=0;
+    document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+    function animCursor(){dx+=(mx-dx)*0.15;dy+=(my-dy)*0.15;dot.style.transform=`translate(${dx-4}px,${dy-4}px)`;requestAnimationFrame(animCursor);}
+    animCursor();
+    document.addEventListener('mouseover',e=>{
+      if(e.target.closest('.photo-card,.nav-pill,.side-btn,.music-btn,a,button')) dot.classList.add('hover');
+      else dot.classList.remove('hover');
+    });
+  }
 
   // ============================================================
   // HERO ANIMATION (GSAP)
@@ -564,7 +573,7 @@
           ${d.photos.slice(0,6).map((p,i) => `
             <div class="bento-item">
               <div class="photo-card" onclick="openLightbox('${ev.id}','${side}',${i})" data-speed="${0.95+Math.random()*0.1}">
-                <img src="${p.src}" alt="${ev.name}" loading="lazy" decoding="async" class="w-full block">
+                <img src="${p.src}" alt="${ev.name}" loading="lazy" decoding="async" class="w-full block" onerror="this.style.display='none'">
                 <div class="overlay"></div>
                 <div class="overlay-text">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg>
@@ -667,15 +676,35 @@
     });
   }
 
-  let lbP=[],lbI=0;
-  function openLightbox(eid,side,idx){lbP=CFG.events.find(e=>e.id===eid).sides[side].photos;lbI=idx;updateLb();const lb=document.getElementById('lightbox');lb.classList.remove('hidden');lb.classList.add('flex');document.body.style.overflow='hidden';lenis.stop();}
-  function closeLightbox(e){if(e&&e.target!==e.currentTarget)return;const lb=document.getElementById('lightbox');lb.classList.add('hidden');lb.classList.remove('flex');document.body.style.overflow='';lenis.start();}
+  let lbP=[],lbI=0,lbScrollY=0;
+  function openLightbox(eid,side,idx){
+    lbP=CFG.events.find(e=>e.id===eid).sides[side].photos;lbI=idx;updateLb();
+    const lb=document.getElementById('lightbox');lb.classList.remove('hidden');lb.classList.add('flex');
+    // iOS-safe scroll lock: position:fixed preserves scroll position
+    lbScrollY=window.scrollY;
+    document.body.style.position='fixed';document.body.style.top=`-${lbScrollY}px`;document.body.style.width='100%';
+    lenis.stop();
+  }
+  function closeLightbox(e){
+    if(e&&e.target!==e.currentTarget)return;
+    const lb=document.getElementById('lightbox');lb.classList.add('hidden');lb.classList.remove('flex');
+    // Restore scroll position
+    document.body.style.position='';document.body.style.top='';document.body.style.width='';
+    window.scrollTo(0,lbScrollY);
+    lenis.start();
+  }
   function lightboxNav(d){lbI=(lbI+d+lbP.length)%lbP.length;updateLb();}
   function updateLb(){const p=lbP[lbI],img=document.getElementById('lightboxImg');img.classList.remove('lb-enter');img.style.opacity=0;setTimeout(()=>{img.src=p.src;img.classList.add('lb-enter');img.style.opacity=1;},80);document.getElementById('lightboxCounter').textContent=`${lbI+1} / ${lbP.length}`;[-1,1].forEach(o=>{const i=(lbI+o+lbP.length)%lbP.length;new Image().src=lbP[i].src;});}
   document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lightboxNav(-1);if(e.key==='ArrowRight')lightboxNav(1);});
+  // Touch swipe — attach to lightbox image so swipes work on the photo itself
   let tx=0;
-  document.getElementById('lightbox').addEventListener('touchstart',e=>{tx=e.changedTouches[0].screenX;},{passive:true});
-  document.getElementById('lightbox').addEventListener('touchend',e=>{const d=e.changedTouches[0].screenX-tx;if(Math.abs(d)>50)lightboxNav(d>0?-1:1);},{passive:true});
+  const lbEl=document.getElementById('lightbox'),lbImgEl=document.getElementById('lightboxImg');
+  function lbTouchStart(e){tx=e.changedTouches[0].clientX;}
+  function lbTouchEnd(e){const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50){e.preventDefault();lightboxNav(d>0?-1:1);}}
+  lbEl.addEventListener('touchstart',lbTouchStart,{passive:true});
+  lbEl.addEventListener('touchend',lbTouchEnd,{passive:false});
+  lbImgEl.addEventListener('touchstart',lbTouchStart,{passive:true});
+  lbImgEl.addEventListener('touchend',function(e){e.stopPropagation();lbTouchEnd(e);},{passive:false});
 
   function updateProgress(){const h=document.documentElement.scrollHeight-window.innerHeight;document.getElementById('scrollProgress').style.width=(h>0?(window.scrollY/h)*100:0)+'%';}
 
@@ -683,9 +712,16 @@
   // MUSIC
   // ============================================================
   let ytPlayer=null,musicPlaying=false;
-  const musicPaused = sessionStorage.getItem('musicPaused') === 'true';
+  // Default to paused on mobile (autoplay is always blocked), and respect user preference on desktop
+  const musicPaused = isMobile ? true : (sessionStorage.getItem('musicPaused') !== 'false');
   const ytS=document.createElement('script');ytS.src='https://www.youtube.com/iframe_api';document.head.appendChild(ytS);
-  window.onYouTubeIframeAPIReady=function(){ytPlayer=new YT.Player('ytPlayer',{height:'0',width:'0',videoId:'AGsn2ycFRqI',playerVars:{autoplay:musicPaused?0:1,loop:1,playlist:'AGsn2ycFRqI',controls:0},events:{onReady:()=>{ytPlayer.setVolume(35);if(!musicPaused){ytPlayer.playVideo();musicPlaying=true;const btn=document.getElementById('musicBtn');btn.classList.remove('music-paused');btn.classList.add('music-playing');btn.querySelector('.music-tooltip').textContent='Pause Music';}else{musicPlaying=false;const btn=document.getElementById('musicBtn');btn.classList.remove('music-playing');btn.classList.add('music-paused');btn.querySelector('.music-tooltip').textContent='Play Music';}},onStateChange:e=>{if(e.data===YT.PlayerState.ENDED)ytPlayer.playVideo();}}});};
+  function syncMusicUI(playing){
+    musicPlaying=playing;
+    const btn=document.getElementById('musicBtn'),tt=btn.querySelector('.music-tooltip');
+    btn.classList.toggle('music-playing',playing);btn.classList.toggle('music-paused',!playing);
+    tt.textContent=playing?'Pause Music':'Play Music';
+  }
+  window.onYouTubeIframeAPIReady=function(){ytPlayer=new YT.Player('ytPlayer',{height:'0',width:'0',videoId:'AGsn2ycFRqI',playerVars:{autoplay:musicPaused?0:1,loop:1,playlist:'AGsn2ycFRqI',controls:0},events:{onReady:()=>{ytPlayer.setVolume(35);if(!musicPaused){ytPlayer.playVideo();}syncMusicUI(false);},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING)syncMusicUI(true);else if(e.data===YT.PlayerState.PAUSED)syncMusicUI(false);else if(e.data===YT.PlayerState.ENDED)ytPlayer.playVideo();}}});};
   function toggleMusic(){if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function')return;const btn=document.getElementById('musicBtn'),tt=btn.querySelector('.music-tooltip');if(musicPlaying){ytPlayer.pauseVideo();musicPlaying=false;btn.classList.remove('music-playing');btn.classList.add('music-paused');tt.textContent='Play Music';sessionStorage.setItem('musicPaused','true');}else{ytPlayer.playVideo();musicPlaying=true;btn.classList.remove('music-paused');btn.classList.add('music-playing');tt.textContent='Pause Music';sessionStorage.setItem('musicPaused','false');}}
 
   // ============================================================

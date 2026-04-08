@@ -217,8 +217,8 @@
     <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center">
       <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
     </div>
-    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="" onclick="event.stopPropagation()">
-    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[88vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen onclick="event.stopPropagation()"></iframe>
+    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="">
+    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[88vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen></iframe>
   </div>
 
   <script>
@@ -234,7 +234,14 @@
     gsap.ticker.add(t=>lenis.raf(t*1000));
     gsap.ticker.lagSmoothing(0);
   } else {
-    lenis = { scrollTo: (y, opts) => window.scrollTo(0, typeof y === 'number' ? y : 0), stop: ()=>{}, start: ()=>{} };
+    lenis = {
+      scrollTo: (target, opts) => {
+        const el = typeof target === 'string' ? document.querySelector(target) : null;
+        const y = el ? el.getBoundingClientRect().top + window.scrollY + (opts?.offset || 0) : (typeof target === 'number' ? target : 0);
+        window.scrollTo({ top: y, behavior: opts?.immediate ? 'instant' : 'smooth' });
+      },
+      stop: ()=>{}, start: ()=>{}
+    };
   }
 
   // ============================================================
@@ -445,14 +452,16 @@
   // ============================================================
   // LIGHTBOX
   // ============================================================
-  let lbIdx = 0;
+  let lbIdx = 0, lbScrollY = 0;
 
   function openLb(idx) {
     lbIdx = idx;
     updateLb();
     const lb = document.getElementById('lightbox');
     lb.classList.remove('hidden'); lb.classList.add('flex');
-    document.body.style.overflow = 'hidden';
+    // iOS-safe scroll lock
+    lbScrollY = window.scrollY;
+    document.body.style.position = 'fixed'; document.body.style.top = `-${lbScrollY}px`; document.body.style.width = '100%';
     lenis.stop();
   }
 
@@ -464,7 +473,9 @@
     const video = document.getElementById('lightboxVideo');
     video.src = '';
     video.classList.add('hidden');
-    document.body.style.overflow = '';
+    // Restore scroll position
+    document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = '';
+    window.scrollTo(0, lbScrollY);
     lenis.start();
   }
 
@@ -537,15 +548,15 @@
     if (e.key === 'ArrowRight') lightboxNav(1);
   });
 
-  // Touch swipe
+  // Touch swipe — attach to both container and image so swipe works on the photo itself
   let tx = 0;
-  document.getElementById('lightbox').addEventListener('touchstart', e => {
-    tx = e.changedTouches[0].screenX;
-  }, {passive:true});
-  document.getElementById('lightbox').addEventListener('touchend', e => {
-    const d = e.changedTouches[0].screenX - tx;
-    if (Math.abs(d) > 50) lightboxNav(d > 0 ? -1 : 1);
-  }, {passive:true});
+  function lbTouchStart(e){tx=e.changedTouches[0].clientX;}
+  function lbTouchEnd(e){const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50){e.preventDefault();lightboxNav(d>0?-1:1);}}
+  const _lb=document.getElementById('lightbox'), _lbImg=document.getElementById('lightboxImg');
+  _lb.addEventListener('touchstart', lbTouchStart, {passive:true});
+  _lb.addEventListener('touchend', lbTouchEnd, {passive:false});
+  _lbImg.addEventListener('touchstart', lbTouchStart, {passive:true});
+  _lbImg.addEventListener('touchend', function(e){e.stopPropagation();lbTouchEnd(e);}, {passive:false});
 
   // ============================================================
   // INIT

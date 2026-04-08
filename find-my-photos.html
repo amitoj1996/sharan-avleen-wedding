@@ -198,7 +198,7 @@
     <!-- Face Grid View -->
     <div id="gridView" class="hidden">
       <div class="flex justify-center mb-8">
-        <button id="selectModeBtn" onclick="toggleSelectMode()"
+        <button id="selectModeBtn"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-ui text-[10px] font-medium tracking-[0.15em] uppercase bg-cream-200/60 text-burgundy-800 border border-gold-400/15 hover:bg-burgundy-50 transition">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Find Group Photos
@@ -251,7 +251,7 @@
     <div id="lbSpinner" class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
     </div>
-    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="" onclick="event.stopPropagation()">
+    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="">
   </div>
 
   <script>
@@ -266,7 +266,14 @@
     gsap.ticker.add(t=>lenis.raf(t*1000));
     gsap.ticker.lagSmoothing(0);
   } else {
-    lenis = { scrollTo: (y, opts) => window.scrollTo(0, typeof y === 'number' ? y : 0), stop: ()=>{}, start: ()=>{} };
+    lenis = {
+      scrollTo: (target, opts) => {
+        const el = typeof target === 'string' ? document.querySelector(target) : null;
+        const y = el ? el.getBoundingClientRect().top + window.scrollY + (opts?.offset || 0) : (typeof target === 'number' ? target : 0);
+        window.scrollTo({ top: y, behavior: opts?.immediate ? 'instant' : 'smooth' });
+      },
+      stop: ()=>{}, start: ()=>{}
+    };
   }
 
   // State
@@ -284,32 +291,23 @@
   // ============================================================
   // LOAD DATA
   // ============================================================
-  let driveIndex = {}; // filename → drive file ID
-
   async function loadData() {
     try {
-      // Load both face data and drive photo index
-      const [facesRes, driveRes] = await Promise.all([
-        fetch('assets/data/faces_data.json'),
-        fetch('assets/data/drive_photos.json')
-      ]);
+      const facesRes = await fetch('assets/data/faces_data.json');
+      if (!facesRes.ok) throw new Error(`HTTP ${facesRes.status}`);
       facesData = await facesRes.json();
 
-      // Build filename → drive ID lookup
-      if (driveRes.ok) {
-        const driveData = await driveRes.json();
-        for (const key in driveData.events) {
-          const parts = key.split('_'); // e.g. "shagan_girl"
-          const event = parts[0];
-          const side = parts[1];
-          for (const photo of driveData.events[key]) {
-            driveIndex[`${side}_${event}_${photo.name.toLowerCase()}`] = photo.id;
-          }
-        }
-      }
-
       document.getElementById('loadingState').classList.add('hidden');
-      showGrid();
+
+      // Check URL for deep link
+      const params = new URLSearchParams(window.location.search);
+      const personId = params.get('person');
+      const isGroup = params.get('group');
+      if (personId && facesData.clusters.find(c => c.id === personId)) {
+        showPerson(personId);
+      } else {
+        showGrid();
+      }
     } catch(e) {
       document.getElementById('loadingState').innerHTML = `
         <p class="font-body text-lg text-burgundy-700/50 italic">Face data not yet available.</p>
@@ -319,12 +317,7 @@
   }
 
   function getPhotoUrl(photo) {
-    // Use local thumbnail if available, otherwise use Drive URL
-    if (photo.thumb) return photo.thumb;
-    const driveKey = `${photo.side}_${photo.event}_${photo.filename.toLowerCase()}`;
-    const driveId = driveIndex[driveKey];
-    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w400`;
-    return null;
+    return photo.thumb || null;
   }
 
   // ============================================================
@@ -334,11 +327,15 @@
     currentCluster = null;
     window._allPersonPhotos = null;
     clearSelection(); // Reset select mode, selectedFaces, and button state
-    document.getElementById('gridView').classList.remove('hidden');
+    const gridEl = document.getElementById('gridView');
+    gridEl.classList.remove('hidden');
     document.getElementById('detailView').classList.add('hidden');
-    document.getElementById('gridView').classList.add('view-fade-in');
+    // Re-trigger fade-in animation by removing and re-adding class after reflow
+    gridEl.classList.remove('view-fade-in');
+    void gridEl.offsetWidth;
+    gridEl.classList.add('view-fade-in');
     document.getElementById('multiSelectBar').classList.add('hidden');
-    history.pushState({view:'grid'}, '', 'find-my-photos.html');
+    history.replaceState({view:'grid'}, '', 'find-my-photos.html');
 
     const grid = document.getElementById('faceGrid');
     grid.innerHTML = facesData.clusters.map((c, i) => `
@@ -511,8 +508,11 @@
     currentFilter = 'all';
     document.getElementById('gridView').classList.add('hidden');
     document.getElementById('multiSelectBar').classList.add('hidden');
-    document.getElementById('detailView').classList.remove('hidden');
-    document.getElementById('detailView').classList.add('view-fade-in');
+    const detailEl2 = document.getElementById('detailView');
+    detailEl2.classList.remove('hidden');
+    detailEl2.classList.remove('view-fade-in');
+    void detailEl2.offsetWidth;
+    detailEl2.classList.add('view-fade-in');
     history.pushState({view:'group'}, '', 'find-my-photos.html?group=true');
 
     // Header — show all selected faces
@@ -541,8 +541,11 @@
 
     currentFilter = 'all';
     document.getElementById('gridView').classList.add('hidden');
-    document.getElementById('detailView').classList.remove('hidden');
-    document.getElementById('detailView').classList.add('view-fade-in');
+    const detailEl = document.getElementById('detailView');
+    detailEl.classList.remove('hidden');
+    detailEl.classList.remove('view-fade-in');
+    void detailEl.offsetWidth;
+    detailEl.classList.add('view-fade-in');
     history.pushState({view:'person', id:clusterId}, '', `find-my-photos.html?person=${clusterId}`);
 
     // Header — always rebuild to restore original structure
@@ -562,15 +565,21 @@
     lenis.scrollTo(0, { immediate:true });
   }
 
+  const PHOTOS_PER_BATCH = 40;
+  let _photoBatches = {}; // eventId → { photos[], rendered }
+  let _photoScrollHandler = null;
+
   function renderPhotos() {
     const el = document.getElementById('personPhotos');
     const driveEl = document.getElementById('driveLinks');
-    driveEl.innerHTML = ''; // Clear old links
+    driveEl.innerHTML = '';
 
-    // Add Drive URLs to all photos
+    // Clean up previous scroll handler
+    if (_photoScrollHandler) { window.removeEventListener('scroll', _photoScrollHandler); _photoScrollHandler = null; }
+
     const photos = currentCluster.photos.map(p => ({ ...p, url: getPhotoUrl(p) })).filter(p => p.url);
 
-    // Group photos by event
+    // Group by event and build flat index for lightbox
     const eventOrder = ['mehdi','shagan','sangeet','vatna','wedding','reception','path'];
     const grouped = {};
     photos.forEach(p => {
@@ -578,51 +587,94 @@
       grouped[p.event].push(p);
     });
 
-    // Build global index mapping for lightbox
     const allPhotosFlat = [];
+    _photoBatches = {};
     let html = '';
 
     eventOrder.forEach(eventId => {
       if (!grouped[eventId]) return;
       const eventPhotos = grouped[eventId];
       const startIdx = allPhotosFlat.length;
-
       eventPhotos.forEach(p => allPhotosFlat.push(p));
 
+      _photoBatches[eventId] = { photos: eventPhotos, rendered: 0, startIdx };
+
       html += `
-        <div class="mb-12">
+        <div class="mb-12" id="event-section-${eventId}">
           <div class="flex items-center justify-between mb-5">
             <div>
               <h3 class="font-display text-2xl md:text-3xl text-burgundy-800 font-bold">${EVENT_NAMES[eventId] || eventId}</h3>
               <p class="font-ui text-[9px] text-burgundy-700/40 tracking-[0.15em] uppercase mt-1">${eventPhotos.length} photos</p>
             </div>
           </div>
-          <div class="masonry">
-            ${eventPhotos.map((p, i) => `
-              <div class="masonry-item">
-                <div class="photo-card" onclick="openLb(${startIdx + i})">
-                  <img src="${p.url}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block"
-                       onerror="this.parentElement.parentElement.style.display='none'">
-                  <div class="overlay"></div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+          <div class="masonry" id="masonry-${eventId}"></div>
         </div>
       `;
     });
 
     el.innerHTML = html;
-
-    // Store flat list for lightbox
     window._allPersonPhotos = allPhotosFlat;
 
-    // Observe items for viewport fade-in
-    el.querySelectorAll('.masonry-item').forEach(item => photoObserver.observe(item));
+    // Render first batch for each event
+    for (const eventId in _photoBatches) {
+      renderPhotoBatch(eventId);
+    }
+
+    // Infinite scroll — render more as user scrolls down
+    let scrollThrottle = false;
+    _photoScrollHandler = function() {
+      if (scrollThrottle) return;
+      scrollThrottle = true;
+      requestAnimationFrame(() => {
+        scrollThrottle = false;
+        const viewBottom = window.scrollY + window.innerHeight + 600;
+        for (const eventId in _photoBatches) {
+          const batch = _photoBatches[eventId];
+          if (batch.rendered >= batch.photos.length) continue;
+          const container = document.getElementById(`masonry-${eventId}`);
+          if (container && container.getBoundingClientRect().bottom < window.innerHeight + 800) {
+            renderPhotoBatch(eventId);
+          }
+        }
+      });
+    };
+    window.addEventListener('scroll', _photoScrollHandler, { passive: true });
   }
 
-  function renderDriveLinks() {
-    // No longer needed — sections are inline
+  function renderPhotoBatch(eventId) {
+    const batch = _photoBatches[eventId];
+    if (!batch || batch.rendered >= batch.photos.length) return;
+
+    const container = document.getElementById(`masonry-${eventId}`);
+    if (!container) return;
+
+    const start = batch.rendered;
+    const end = Math.min(start + PHOTOS_PER_BATCH, batch.photos.length);
+    const fragment = document.createDocumentFragment();
+
+    for (let i = start; i < end; i++) {
+      const p = batch.photos[i];
+      const globalIdx = batch.startIdx + i;
+      const item = document.createElement('div');
+      item.className = 'masonry-item';
+      item.innerHTML = `
+        <div class="photo-card" onclick="openLb(${globalIdx})">
+          <img src="${p.url}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block"
+               onerror="this.parentElement.parentElement.style.display='none'">
+          <div class="overlay"></div>
+        </div>
+      `;
+      fragment.appendChild(item);
+    }
+
+    container.appendChild(fragment);
+    batch.rendered = end;
+
+    // Observe new items for fade-in
+    container.querySelectorAll('.masonry-item:not(.observed)').forEach(item => {
+      item.classList.add('observed');
+      photoObserver.observe(item);
+    });
   }
 
   // ============================================================
@@ -630,13 +682,18 @@
   // ============================================================
   let lbPhotos=[], lbIdx=0;
 
+  let lbScrollY = 0;
+
   function openLb(idx) {
-    lbPhotos = window._allPersonPhotos || currentCluster.photos.filter(p => p.thumb);
+    lbPhotos = window._allPersonPhotos || (currentCluster ? currentCluster.photos.filter(p => p.thumb) : []);
+    if (!lbPhotos.length) return;
     lbIdx = idx;
     updateLb();
     const lb = document.getElementById('lightbox');
     lb.classList.remove('hidden'); lb.classList.add('flex');
-    document.body.style.overflow = 'hidden';
+    // iOS-safe scroll lock
+    lbScrollY = window.scrollY;
+    document.body.style.position = 'fixed'; document.body.style.top = `-${lbScrollY}px`; document.body.style.width = '100%';
     lenis.stop();
   }
 
@@ -644,7 +701,9 @@
     if (e && e.target !== e.currentTarget) return;
     document.getElementById('lightbox').classList.add('hidden');
     document.getElementById('lightbox').classList.remove('flex');
-    document.body.style.overflow = '';
+    // Restore scroll position
+    document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = '';
+    window.scrollTo(0, lbScrollY);
     lenis.start();
   }
 
@@ -697,12 +756,19 @@
     if(e.key==='ArrowRight')lightboxNav(1);
   });
 
+  // Touch swipe — attach to both container and image so swipe works on the photo itself
   let tx=0;
-  document.getElementById('lightbox').addEventListener('touchstart',e=>{tx=e.changedTouches[0].screenX;},{passive:true});
-  document.getElementById('lightbox').addEventListener('touchend',e=>{const d=e.changedTouches[0].screenX-tx;if(Math.abs(d)>50)lightboxNav(d>0?-1:1);},{passive:true});
+  function _lbTouchStart(e){tx=e.changedTouches[0].clientX;}
+  function _lbTouchEnd(e){const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50){e.preventDefault();lightboxNav(d>0?-1:1);}}
+  const _fmpLb=document.getElementById('lightbox'), _fmpLbImg=document.getElementById('lightboxImg');
+  _fmpLb.addEventListener('touchstart',_lbTouchStart,{passive:true});
+  _fmpLb.addEventListener('touchend',_lbTouchEnd,{passive:false});
+  _fmpLbImg.addEventListener('touchstart',_lbTouchStart,{passive:true});
+  _fmpLbImg.addEventListener('touchend',function(e){e.stopPropagation();_lbTouchEnd(e);},{passive:false});
 
-  // Back button
+  // Back button — guard against null facesData
   window.addEventListener('popstate', e => {
+    if (!facesData) return;
     if (e.state?.view === 'grid' || !e.state) showGrid();
     else if (e.state?.view === 'person') showPerson(e.state.id);
   });
