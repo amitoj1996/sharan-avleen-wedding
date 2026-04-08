@@ -96,23 +96,17 @@
     }
     .photo-card:hover .overlay { opacity:1; }
 
-    /* Photo grid — uses CSS grid instead of column-count to prevent mobile reflow */
+    /* JS-positioned masonry — absolute positioning eliminates row-height gaps */
     .masonry {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      position: relative;
     }
-    @media(min-width:768px) { .masonry { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
-    @media(min-width:1024px) { .masonry { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
     .masonry-item {
+      position: absolute;
       opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-      will-change: opacity, transform;
+      transition: opacity 0.5s ease-out;
     }
     .masonry-item.visible {
       opacity: 1;
-      transform: translateY(0);
     }
     .masonry-item img {
       width: 100%;
@@ -660,6 +654,58 @@
     window.addEventListener('scroll', _photoScrollHandler, { passive: true });
   }
 
+  // ============================================================
+  // MASONRY LAYOUT ENGINE
+  // ============================================================
+  function getMasonryCols() { return window.innerWidth >= 1024 ? 4 : window.innerWidth >= 768 ? 3 : 2; }
+  const MASONRY_GAP = window.innerWidth >= 768 ? 14 : 10;
+
+  function layoutMasonry(container, startFrom) {
+    const cols = getMasonryCols();
+    const gap = MASONRY_GAP;
+    const containerWidth = container.clientWidth;
+    if (containerWidth === 0) return;
+    const colWidth = (containerWidth - gap * (cols - 1)) / cols;
+
+    const items = container.querySelectorAll('.masonry-item');
+    if (!container._colHeights || startFrom === 0) {
+      container._colHeights = new Array(cols).fill(0);
+    }
+
+    for (let i = startFrom; i < items.length; i++) {
+      const item = items[i];
+      const shortest = container._colHeights.indexOf(Math.min(...container._colHeights));
+      const x = shortest * (colWidth + gap);
+      const y = container._colHeights[shortest];
+
+      item.style.width = colWidth + 'px';
+      item.style.left = x + 'px';
+      item.style.top = y + 'px';
+
+      // Use natural dimensions if loaded, otherwise estimate 4:3
+      const img = item.querySelector('img');
+      const itemHeight = (img && img.naturalHeight && img.naturalWidth)
+        ? (img.naturalHeight / img.naturalWidth) * colWidth
+        : colWidth * 0.75;
+
+      container._colHeights[shortest] += itemHeight + gap;
+    }
+
+    container.style.height = Math.max(...container._colHeights) + 'px';
+  }
+
+  // Re-layout all masonry containers on resize/orientation change
+  let _resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      document.querySelectorAll('.masonry').forEach(c => {
+        c._colHeights = null;
+        layoutMasonry(c, 0);
+      });
+    }, 200);
+  });
+
   function renderPhotoBatch(eventId) {
     const batch = _photoBatches[eventId];
     if (!batch || batch.rendered >= batch.photos.length) return;
@@ -669,7 +715,7 @@
 
     const start = batch.rendered;
     const end = Math.min(start + PHOTOS_PER_BATCH, batch.photos.length);
-    const fragment = document.createDocumentFragment();
+    const prevItemCount = container.querySelectorAll('.masonry-item').length;
 
     for (let i = start; i < end; i++) {
       const p = batch.photos[i];
@@ -683,19 +729,29 @@
           <div class="overlay"></div>
         </div>
       `;
-      fragment.appendChild(item);
+      container.appendChild(item);
+
+      // When image loads, re-layout from this item onward to correct height estimate
+      const img = item.querySelector('img');
+      if (img) {
+        img.addEventListener('load', () => {
+          layoutMasonry(container, 0);
+        }, { once: true });
+      }
     }
 
-    container.appendChild(fragment);
     batch.rendered = end;
 
-    // Observe new items for fade-in, with fallback for items already in viewport
+    // Position new items
+    layoutMasonry(container, prevItemCount);
+
+    // Observe new items for fade-in
     const newItems = container.querySelectorAll('.masonry-item:not(.observed)');
     newItems.forEach(item => {
       item.classList.add('observed');
       photoObserver.observe(item);
     });
-    // Fallback: if observer hasn't fired after 300ms, force-show items (mobile reliability)
+    // Fallback: force-show items near viewport after 300ms
     setTimeout(() => {
       newItems.forEach(item => {
         if (!item.classList.contains('visible')) {
