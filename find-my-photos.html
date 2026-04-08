@@ -29,11 +29,13 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollTrigger.min.js"></script>
-  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
 
   <style>
     html.lenis, html.lenis body { height:auto; }
@@ -137,6 +139,10 @@
       .face-card,.photo-card img { transition:none; }
       .orb { display:none; }
       .grain-overlay::after { display:none; }
+    }
+    @media(max-width:768px) {
+      .orb{display:none!important}
+      .grain-overlay::after{display:none!important}
     }
   </style>
 </head>
@@ -389,10 +395,18 @@
     document.getElementById('statsLine').textContent =
       `${facesData.stats.clusters} guests found across ${facesData.stats.photos_scanned.toLocaleString()} photos`;
 
-    // GSAP stagger entrance
-    gsap.fromTo('#faceGrid .face-card',
-      { opacity:0, y:20, scale:0.9 },
-      { opacity:1, y:0, scale:1, duration:0.5, stagger:0.03, ease:'power2.out' });
+    // GSAP stagger entrance — only animate first 30 for performance, show rest immediately
+    const allCards = grid.querySelectorAll('.face-card');
+    const animateCount = Math.min(30, allCards.length);
+    if (animateCount > 0) {
+      gsap.fromTo(Array.from(allCards).slice(0, animateCount),
+        { opacity:0, y:20, scale:0.9 },
+        { opacity:1, y:0, scale:1, duration:0.5, stagger:0.03, ease:'power2.out' });
+    }
+    // Show remaining cards immediately without animation
+    for (let i = animateCount; i < allCards.length; i++) {
+      allCards[i].style.opacity = '1';
+    }
   }
 
   function toggleSelectMode() {
@@ -655,14 +669,14 @@
   }
 
   // ============================================================
-  // MASONRY LAYOUT ENGINE
+  // MASONRY LAYOUT ENGINE (debounced to prevent O(n²) on image load)
   // ============================================================
   function getMasonryCols() { return window.innerWidth >= 1024 ? 4 : window.innerWidth >= 768 ? 3 : 2; }
-  const MASONRY_GAP = window.innerWidth >= 768 ? 14 : 10;
+  function getMasonryGap() { return window.innerWidth >= 768 ? 14 : 10; }
 
   function layoutMasonry(container, startFrom) {
     const cols = getMasonryCols();
-    const gap = MASONRY_GAP;
+    const gap = getMasonryGap();
     const containerWidth = container.clientWidth;
     if (containerWidth === 0) return;
     const colWidth = (containerWidth - gap * (cols - 1)) / cols;
@@ -682,7 +696,6 @@
       item.style.left = x + 'px';
       item.style.top = y + 'px';
 
-      // Use natural dimensions if loaded, otherwise estimate 4:3
       const img = item.querySelector('img');
       const itemHeight = (img && img.naturalHeight && img.naturalWidth)
         ? (img.naturalHeight / img.naturalWidth) * colWidth
@@ -694,7 +707,20 @@
     container.style.height = Math.max(...container._colHeights) + 'px';
   }
 
-  // Re-layout all masonry containers on resize/orientation change
+  // Debounced re-layout: coalesces multiple image load events into a single rAF
+  const _dirtyContainers = new Set();
+  let _layoutRafId = null;
+  function scheduleMasonryRelayout(container) {
+    _dirtyContainers.add(container);
+    if (_layoutRafId) return;
+    _layoutRafId = requestAnimationFrame(() => {
+      _dirtyContainers.forEach(c => { c._colHeights = null; layoutMasonry(c, 0); });
+      _dirtyContainers.clear();
+      _layoutRafId = null;
+    });
+  }
+
+  // Re-layout on resize/orientation change
   let _resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(_resizeTimer);
@@ -731,12 +757,10 @@
       `;
       container.appendChild(item);
 
-      // When image loads, re-layout from this item onward to correct height estimate
+      // When image loads, schedule a debounced re-layout (coalesces many loads into 1 rAF)
       const img = item.querySelector('img');
       if (img) {
-        img.addEventListener('load', () => {
-          layoutMasonry(container, 0);
-        }, { once: true });
+        img.addEventListener('load', () => scheduleMasonryRelayout(container), { once: true });
       }
     }
 
