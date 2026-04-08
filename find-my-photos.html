@@ -95,12 +95,15 @@
     }
     .photo-card:hover .overlay { opacity:1; }
 
-    /* Masonry */
-    .masonry { column-count:2; column-gap:10px; }
-    @media(min-width:768px) { .masonry { column-count:3; column-gap:14px; } }
-    @media(min-width:1024px) { .masonry { column-count:4; column-gap:14px; } }
+    /* Photo grid — uses CSS grid instead of column-count to prevent mobile reflow */
+    .masonry {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    @media(min-width:768px) { .masonry { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
+    @media(min-width:1024px) { .masonry { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
     .masonry-item {
-      break-inside:avoid; margin-bottom:10px;
       opacity: 0;
       transform: translateY(16px);
       transition: opacity 0.5s ease-out, transform 0.5s ease-out;
@@ -110,7 +113,12 @@
       opacity: 1;
       transform: translateY(0);
     }
-    @media(min-width:768px) { .masonry-item { margin-bottom:14px; } }
+    .masonry-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+    }
 
     /* Nav pill */
     .filter-pill { transition:all 0.3s ease; }
@@ -170,10 +178,10 @@
       <div class="bg-burgundy-800/95 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl border border-burgundy-700/30">
         <p id="selectedCount" class="font-ui text-[11px] text-cream-100 tracking-wide"></p>
         <div class="flex gap-3">
-          <button onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
+          <button ontouchend="event.preventDefault();clearSelection()" onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
             Clear
           </button>
-          <button onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
+          <button ontouchend="event.preventDefault();showGroupPhotos()" onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
             Find Group Photos
           </button>
         </div>
@@ -675,6 +683,14 @@
   }, {
     rootMargin: '50px 0px',
     threshold: 0.1
+  });
+
+  // Mobile touch handlers for buttons (Safari doesn't always fire onclick)
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('selectModeBtn')?.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      toggleSelectMode();
+    });
   });
 
   loadData();
