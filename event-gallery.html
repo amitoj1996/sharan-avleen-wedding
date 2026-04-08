@@ -75,24 +75,24 @@
       -webkit-text-fill-color:transparent; animation:shimmer 8s linear infinite;
     }
 
-    /* Photo grid */
+    /* Photo grid — JS masonry with absolute positioning (no column reflow on append) */
     .photo-grid {
-      column-count: 2; column-gap: 10px;
+      position: relative;
     }
-    @media(min-width:640px) { .photo-grid { column-count: 3; column-gap: 12px; } }
-    @media(min-width:1024px) { .photo-grid { column-count: 4; column-gap: 14px; } }
     .photo-item {
-      break-inside: avoid; margin-bottom: 10px;
+      position: absolute;
       opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-      will-change: opacity, transform;
+      transition: opacity 0.5s ease-out;
     }
     .photo-item.visible {
       opacity: 1;
-      transform: translateY(0);
     }
-    @media(min-width:640px) { .photo-item { margin-bottom: 12px; } }
+    .photo-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+    }
     @media(min-width:1024px) { .photo-item { margin-bottom: 14px; } }
 
     /* Photo card */
@@ -254,6 +254,69 @@
   }
 
   // ============================================================
+  // MASONRY LAYOUT ENGINE
+  // ============================================================
+  function getMasonryCols() { return window.innerWidth >= 1024 ? 4 : window.innerWidth >= 640 ? 3 : 2; }
+  function getMasonryGap() { return window.innerWidth >= 1024 ? 14 : window.innerWidth >= 640 ? 12 : 10; }
+
+  function layoutMasonry(container, startFrom) {
+    const cols = getMasonryCols();
+    const gap = getMasonryGap();
+    const containerWidth = container.clientWidth;
+    if (containerWidth === 0) return;
+    const colWidth = (containerWidth - gap * (cols - 1)) / cols;
+
+    const items = container.querySelectorAll('.photo-item');
+    if (!container._colHeights || startFrom === 0) {
+      container._colHeights = new Array(cols).fill(0);
+    }
+
+    for (let i = startFrom; i < items.length; i++) {
+      const item = items[i];
+      const shortest = container._colHeights.indexOf(Math.min(...container._colHeights));
+      const x = shortest * (colWidth + gap);
+      const y = container._colHeights[shortest];
+
+      item.style.width = colWidth + 'px';
+      item.style.left = x + 'px';
+      item.style.top = y + 'px';
+
+      const img = item.querySelector('img');
+      const itemHeight = (img && img.naturalHeight && img.naturalWidth)
+        ? (img.naturalHeight / img.naturalWidth) * colWidth
+        : colWidth * 0.75;
+
+      container._colHeights[shortest] += itemHeight + gap;
+    }
+
+    container.style.height = Math.max(...container._colHeights) + 'px';
+  }
+
+  // Debounced re-layout: coalesces image load events into a single rAF
+  let _layoutRafId = null;
+  const _dirtyContainers = new Set();
+  function scheduleMasonryRelayout(container) {
+    _dirtyContainers.add(container);
+    if (_layoutRafId) return;
+    _layoutRafId = requestAnimationFrame(() => {
+      _dirtyContainers.forEach(c => { c._colHeights = null; layoutMasonry(c, 0); });
+      _dirtyContainers.clear();
+      _layoutRafId = null;
+    });
+  }
+
+  let _resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      document.querySelectorAll('.photo-grid').forEach(c => {
+        c._colHeights = null;
+        layoutMasonry(c, 0);
+      });
+    }, 200);
+  });
+
+  // ============================================================
   // CONFIG
   // ============================================================
   const EVENT_META = {
@@ -376,7 +439,7 @@
 
     const startIdx = displayedCount;
     const end = Math.min(startIdx + BATCH_SIZE, allPhotos.length);
-    const fragment = document.createDocumentFragment();
+    const prevItemCount = grid.querySelectorAll('.photo-item').length;
 
     for (let i = startIdx; i < end; i++) {
       const photo = allPhotos[i];
@@ -412,11 +475,19 @@
         `;
       }
 
-      fragment.appendChild(div);
+      grid.appendChild(div);
+
+      // Debounced re-layout when image loads with real dimensions
+      const img = div.querySelector('img');
+      if (img) {
+        img.addEventListener('load', () => scheduleMasonryRelayout(grid), { once: true });
+      }
     }
 
-    grid.appendChild(fragment);
     displayedCount = end;
+
+    // Position new items via masonry
+    layoutMasonry(grid, prevItemCount);
 
     // Show/hide load more button
     const loadMoreEl = document.getElementById('loadMore');
@@ -430,8 +501,22 @@
     }
 
     // Observe new items for viewport fade-in
-    const newItems = Array.from(grid.children).slice(startIdx);
-    newItems.forEach(item => photoObserver.observe(item));
+    const newItems = grid.querySelectorAll('.photo-item:not(.observed)');
+    newItems.forEach(item => {
+      item.classList.add('observed');
+      photoObserver.observe(item);
+    });
+    // Fallback: force-show items near viewport
+    setTimeout(() => {
+      newItems.forEach(item => {
+        if (!item.classList.contains('visible')) {
+          const rect = item.getBoundingClientRect();
+          if (rect.top < window.innerHeight + 200) {
+            item.classList.add('visible');
+          }
+        }
+      });
+    }, 300);
   }
 
   function loadNextBatch() {
@@ -579,8 +664,8 @@
       }
     });
   }, {
-    rootMargin: '50px 0px',  // Start slightly before entering viewport
-    threshold: 0.1
+    rootMargin: '200px 0px',
+    threshold: 0
   });
 
   loadData();
