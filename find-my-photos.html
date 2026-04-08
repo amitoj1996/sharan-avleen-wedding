@@ -241,10 +241,30 @@
   // ============================================================
   // LOAD DATA
   // ============================================================
+  let driveIndex = {}; // filename → drive file ID
+
   async function loadData() {
     try {
-      const res = await fetch('assets/data/faces_data.json');
-      facesData = await res.json();
+      // Load both face data and drive photo index
+      const [facesRes, driveRes] = await Promise.all([
+        fetch('assets/data/faces_data.json'),
+        fetch('assets/data/drive_photos.json')
+      ]);
+      facesData = await facesRes.json();
+
+      // Build filename → drive ID lookup
+      if (driveRes.ok) {
+        const driveData = await driveRes.json();
+        for (const key in driveData.events) {
+          const parts = key.split('_'); // e.g. "shagan_girl"
+          const event = parts[0];
+          const side = parts[1];
+          for (const photo of driveData.events[key]) {
+            driveIndex[`${side}_${event}_${photo.name.toLowerCase()}`] = photo.id;
+          }
+        }
+      }
+
       document.getElementById('loadingState').classList.add('hidden');
       showGrid();
     } catch(e) {
@@ -253,6 +273,15 @@
         <p class="font-ui text-[10px] text-burgundy-700/30 mt-2">Run the face pipeline first to generate data.</p>
       `;
     }
+  }
+
+  function getPhotoUrl(photo) {
+    // Use local thumbnail if available, otherwise use Drive URL
+    if (photo.thumb) return photo.thumb;
+    const driveKey = `${photo.side}_${photo.event}_${photo.filename.toLowerCase()}`;
+    const driveId = driveIndex[driveKey];
+    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w400`;
+    return null;
   }
 
   // ============================================================
@@ -315,15 +344,15 @@
     const driveEl = document.getElementById('driveLinks');
     driveEl.innerHTML = ''; // Clear old links
 
-    const photos = currentCluster.photos.filter(p => p.thumb);
+    // Add Drive URLs to all photos
+    const photos = currentCluster.photos.map(p => ({ ...p, url: getPhotoUrl(p) })).filter(p => p.url);
 
     // Group photos by event
     const eventOrder = ['mehdi','shagan','sangeet','vatna','wedding','reception','path'];
     const grouped = {};
-    photos.forEach((p, globalIdx) => {
-      const key = p.event;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push({ ...p, globalIdx });
+    photos.forEach(p => {
+      if (!grouped[p.event]) grouped[p.event] = [];
+      grouped[p.event].push(p);
     });
 
     // Build global index mapping for lightbox
@@ -349,7 +378,8 @@
             ${eventPhotos.map((p, i) => `
               <div class="masonry-item">
                 <div class="photo-card" onclick="openLb(${startIdx + i})">
-                  <img src="${p.thumb}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block">
+                  <img src="${p.url}" alt="${EVENT_NAMES[p.event]||p.event}" loading="lazy" decoding="async" class="w-full block"
+                       onerror="this.parentElement.parentElement.style.display='none'">
                   <div class="overlay"></div>
                 </div>
               </div>
@@ -399,8 +429,11 @@
 
   function updateLb() {
     const p=lbPhotos[lbIdx], img=document.getElementById('lightboxImg');
+    const url = p.url || p.thumb;
+    // Use higher res for lightbox if it's a Drive URL
+    const fullUrl = url.includes('lh3.googleusercontent.com') ? url.replace('=w400', '=w1600') : url;
     img.classList.remove('lb-enter'); img.style.opacity=0;
-    setTimeout(()=>{ img.src=p.thumb; img.classList.add('lb-enter'); img.style.opacity=1; },80);
+    setTimeout(()=>{ img.src=fullUrl; img.classList.add('lb-enter'); img.style.opacity=1; },80);
     document.getElementById('lightboxCounter').textContent=`${lbIdx+1} / ${lbPhotos.length}`;
     [-1,1].forEach(o=>{const i=(lbIdx+o+lbPhotos.length)%lbPhotos.length; new Image().src=lbPhotos[i].thumb;});
   }
