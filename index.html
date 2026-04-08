@@ -837,8 +837,8 @@
     }
   });
 
-  // Resume music if it was playing before page navigation
-  if(sessionStorage.getItem('musicPaused')==='false'){loadYouTubeApi();showMusicLoading();}
+  // Auto-start music on page load (browser may block without prior gesture)
+  if(sessionStorage.getItem('musicPaused')!=='true'){loadYouTubeApi();showMusicLoading();}
 
   document.addEventListener('DOMContentLoaded',()=>{
     render();
