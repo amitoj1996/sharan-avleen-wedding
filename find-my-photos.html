@@ -349,21 +349,23 @@
       </div>
     `).join('');
 
-    // Attach event listeners using event delegation (works on all mobile browsers)
-    grid.addEventListener('click', function(e) {
-      const card = e.target.closest('.face-card');
-      if (!card) return;
-      const cid = card.dataset.cluster;
-      if (cid) handleFaceClick(cid, e);
-    });
-    // Also listen for touchend as fallback for iOS
-    grid.addEventListener('touchend', function(e) {
-      const card = e.target.closest('.face-card');
-      if (!card) return;
-      e.preventDefault(); // Prevent ghost click
-      const cid = card.dataset.cluster;
-      if (cid) handleFaceClick(cid, e);
-    }, { passive: false });
+    // Attach event listeners once (prevent duplicate listeners on re-render)
+    if (!grid._listenersAttached) {
+      grid.addEventListener('click', function(e) {
+        const card = e.target.closest('.face-card');
+        if (!card) return;
+        const cid = card.dataset.cluster;
+        if (cid) handleFaceClick(cid, e);
+      });
+      grid.addEventListener('touchend', function(e) {
+        const card = e.target.closest('.face-card');
+        if (!card) return;
+        e.preventDefault();
+        const cid = card.dataset.cluster;
+        if (cid) handleFaceClick(cid, e);
+      }, { passive: false });
+      grid._listenersAttached = true;
+    }
 
     document.getElementById('statsLine').textContent =
       `${facesData.stats.clusters} guests found across ${facesData.stats.photos_scanned.toLocaleString()} photos`;
@@ -396,7 +398,7 @@
   }
 
   function handleFaceClick(clusterId, event) {
-    if (selectMode || event.ctrlKey || event.metaKey) {
+    if (selectMode || (event && event.ctrlKey) || (event && event.metaKey)) {
       toggleFaceSelection(clusterId);
     } else {
       showPerson(clusterId);
