@@ -78,6 +78,7 @@
     }
     .face-card:hover { transform:translateY(-6px) scale(1.05); }
     .face-card:hover .face-img { border-color:rgba(212,168,85,0.8); box-shadow:0 0 30px rgba(212,168,85,0.2); }
+    .face-card.selected .face-img { border-color:#7B1E3A !important; border-width:3px !important; box-shadow:0 0 20px rgba(123,30,58,0.3); }
     .face-img {
       border: 2px solid rgba(212,168,85,0.25);
       transition: all 0.4s ease;
@@ -161,7 +162,22 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>
       </div>
       <h1 class="font-display text-4xl md:text-6xl lg:text-7xl text-burgundy-800 font-black mb-4">Find Your Photos</h1>
-      <p class="font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto">Tap your face to see every photo you appear in across all events</p>
+      <p class="font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto">Tap a face to see their photos, or hold Ctrl and click multiple faces to find group photos</p>
+    </div>
+
+    <!-- Multi-select Action Bar -->
+    <div id="multiSelectBar" class="hidden sticky top-16 z-40 mb-8">
+      <div class="bg-burgundy-800/95 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl border border-burgundy-700/30">
+        <p id="selectedCount" class="font-ui text-[11px] text-cream-100 tracking-wide"></p>
+        <div class="flex gap-3">
+          <button onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
+            Clear
+          </button>
+          <button onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
+            Find Group Photos
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -232,6 +248,7 @@
   let facesData = null;
   let currentCluster = null;
   let currentFilter = 'all';
+  let selectedFaces = new Set(); // For multi-select mode
 
   const EVENT_NAMES = {
     path:'Path', mehdi:'Mehdi', shagan:'Shagan', sangeet:'Sangeet',
@@ -289,16 +306,21 @@
   // ============================================================
   function showGrid() {
     currentCluster = null;
+    selectedFaces.clear();
     document.getElementById('gridView').classList.remove('hidden');
     document.getElementById('detailView').classList.add('hidden');
     document.getElementById('gridView').classList.add('view-fade-in');
+    document.getElementById('multiSelectBar').classList.add('hidden');
     history.pushState({view:'grid'}, '', 'find-my-photos.html');
 
     const grid = document.getElementById('faceGrid');
     grid.innerHTML = facesData.clusters.map((c, i) => `
-      <div class="face-card text-center" onclick="showPerson('${c.id}')" style="animation-delay:${i*40}ms">
-        <div class="face-img w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50">
+      <div class="face-card text-center" data-cluster="${c.id}" onclick="handleFaceClick('${c.id}', event)" style="animation-delay:${i*40}ms">
+        <div class="face-img w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-2 overflow-hidden bg-burgundy-50 relative">
           <img src="${c.thumbnail}" alt="Guest" class="w-full h-full object-cover" loading="lazy">
+          <div class="select-check hidden absolute inset-0 bg-burgundy-800/50 flex items-center justify-center rounded-full">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
         </div>
         <p class="font-ui text-[9px] text-burgundy-700/50">${c.photo_count} photos</p>
       </div>
@@ -311,6 +333,122 @@
     gsap.fromTo('#faceGrid .face-card',
       { opacity:0, y:20, scale:0.9 },
       { opacity:1, y:0, scale:1, duration:0.5, stagger:0.03, ease:'power2.out' });
+  }
+
+  function handleFaceClick(clusterId, event) {
+    // Long press or ctrl/cmd+click = toggle selection
+    if (event.ctrlKey || event.metaKey || selectedFaces.size > 0) {
+      toggleFaceSelection(clusterId);
+    } else {
+      showPerson(clusterId);
+    }
+  }
+
+  function toggleFaceSelection(clusterId) {
+    if (selectedFaces.has(clusterId)) {
+      selectedFaces.delete(clusterId);
+    } else {
+      selectedFaces.add(clusterId);
+    }
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI() {
+    // Update face card visuals
+    document.querySelectorAll('.face-card').forEach(card => {
+      const cid = card.dataset.cluster;
+      const check = card.querySelector('.select-check');
+      if (selectedFaces.has(cid)) {
+        check.classList.remove('hidden');
+        card.querySelector('.face-img').style.borderColor = '#7B1E3A';
+        card.querySelector('.face-img').style.borderWidth = '3px';
+      } else {
+        check.classList.add('hidden');
+        card.querySelector('.face-img').style.borderColor = '';
+        card.querySelector('.face-img').style.borderWidth = '';
+      }
+    });
+
+    // Show/hide multi-select action bar
+    const bar = document.getElementById('multiSelectBar');
+    if (selectedFaces.size >= 2) {
+      bar.classList.remove('hidden');
+      document.getElementById('selectedCount').textContent =
+        `Find photos with all ${selectedFaces.size} people`;
+    } else if (selectedFaces.size === 1) {
+      bar.classList.remove('hidden');
+      document.getElementById('selectedCount').textContent =
+        `Select more faces to find group photos`;
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+
+  function clearSelection() {
+    selectedFaces.clear();
+    updateSelectionUI();
+  }
+
+  function showGroupPhotos() {
+    if (selectedFaces.size < 2) return;
+
+    // Find photos that appear in ALL selected clusters
+    const clusterPhotos = Array.from(selectedFaces).map(cid => {
+      const cluster = facesData.clusters.find(c => c.id === cid);
+      return new Set(cluster.photos.map(p => p.id));
+    });
+
+    // Intersection of all sets
+    let commonIds = clusterPhotos[0];
+    for (let i = 1; i < clusterPhotos.length; i++) {
+      commonIds = new Set([...commonIds].filter(id => clusterPhotos[i].has(id)));
+    }
+
+    if (commonIds.size === 0) {
+      alert('No photos found with all selected people together.');
+      return;
+    }
+
+    // Get the actual photo objects from the first cluster (they have the same data)
+    const firstCluster = facesData.clusters.find(c => c.id === Array.from(selectedFaces)[0]);
+    const commonPhotos = firstCluster.photos.filter(p => commonIds.has(p.id));
+
+    // Build a virtual cluster for display
+    const selectedThumbnails = Array.from(selectedFaces).map(cid =>
+      facesData.clusters.find(c => c.id === cid).thumbnail
+    );
+
+    currentCluster = {
+      id: 'group',
+      thumbnail: selectedThumbnails[0],
+      photo_count: commonPhotos.length,
+      events: [...new Set(commonPhotos.map(p => p.event))],
+      photos: commonPhotos,
+      _selectedThumbnails: selectedThumbnails
+    };
+
+    currentFilter = 'all';
+    document.getElementById('gridView').classList.add('hidden');
+    document.getElementById('multiSelectBar').classList.add('hidden');
+    document.getElementById('detailView').classList.remove('hidden');
+    document.getElementById('detailView').classList.add('view-fade-in');
+    history.pushState({view:'group'}, '', 'find-my-photos.html?group=true');
+
+    // Header — show all selected faces
+    document.getElementById('personHeader').innerHTML = `
+      <div class="flex -space-x-3 mr-3">
+        ${selectedThumbnails.map(t => `
+          <img src="${t}" class="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-cream-100 object-cover" alt="Guest">
+        `).join('')}
+      </div>
+      <div>
+        <p id="personCount" class="font-display text-2xl md:text-3xl text-burgundy-800 font-bold">Found ${commonPhotos.length} photos together</p>
+        <p id="personEvents" class="font-ui text-[10px] text-burgundy-700/40 tracking-[0.15em] uppercase mt-1">Across ${currentCluster.events.map(e => EVENT_NAMES[e]||e).join(', ')}</p>
+      </div>
+    `;
+
+    renderPhotos();
+    lenis.scrollTo(0, { immediate:true });
   }
 
   // ============================================================
