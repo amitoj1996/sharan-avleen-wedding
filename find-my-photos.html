@@ -314,7 +314,8 @@
   // ============================================================
   function showGrid() {
     currentCluster = null;
-    selectedFaces.clear();
+    window._allPersonPhotos = null;
+    clearSelection(); // Reset select mode, selectedFaces, and button state
     document.getElementById('gridView').classList.remove('hidden');
     document.getElementById('detailView').classList.add('hidden');
     document.getElementById('gridView').classList.add('view-fade-in');
@@ -351,7 +352,7 @@
       btn.classList.add('bg-burgundy-800', 'text-cream-100', 'border-burgundy-700');
       btn.innerHTML = `
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Selecting — Tap faces to compare
+        Now tap the people you want to find together
       `;
     } else {
       btn.classList.add('bg-cream-200/60', 'text-burgundy-800', 'border-gold-400/15');
@@ -402,11 +403,11 @@
     if (selectedFaces.size >= 2) {
       bar.classList.remove('hidden');
       document.getElementById('selectedCount').textContent =
-        `Find photos with all ${selectedFaces.size} people`;
+        `${selectedFaces.size} people selected`;
     } else if (selectedFaces.size === 1) {
       bar.classList.remove('hidden');
       document.getElementById('selectedCount').textContent =
-        `Select more faces to find group photos`;
+        `Tap one more face to find photos together`;
     } else {
       bar.classList.add('hidden');
     }
