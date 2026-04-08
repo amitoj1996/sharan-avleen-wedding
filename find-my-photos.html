@@ -75,6 +75,7 @@
     /* Face card */
     .face-card {
       cursor:pointer; transition: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+      touch-action: manipulation; /* Removes 300ms tap delay on mobile */
     }
     .face-card:hover { transform:translateY(-6px) scale(1.05); }
     .face-card:hover .face-img { border-color:rgba(212,168,85,0.8); box-shadow:0 0 30px rgba(212,168,85,0.2); }
@@ -178,10 +179,10 @@
       <div class="bg-burgundy-800/95 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl border border-burgundy-700/30">
         <p id="selectedCount" class="font-ui text-[11px] text-cream-100 tracking-wide"></p>
         <div class="flex gap-3">
-          <button ontouchend="event.preventDefault();clearSelection()" onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
+          <button onclick="clearSelection()" class="px-4 py-2 rounded-full font-ui text-[10px] text-cream-100/60 hover:text-cream-100 border border-cream-100/20 hover:border-cream-100/40 tracking-[0.1em] uppercase transition">
             Clear
           </button>
-          <button ontouchend="event.preventDefault();showGroupPhotos()" onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
+          <button onclick="showGroupPhotos()" class="px-5 py-2 rounded-full font-ui text-[10px] text-burgundy-950 bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 font-semibold tracking-[0.1em] uppercase shadow-md transition">
             Find Group Photos
           </button>
         </div>
@@ -349,21 +350,15 @@
       </div>
     `).join('');
 
-    // Attach event listeners once (prevent duplicate listeners on re-render)
+    // Use Pointer Events for unified touch+click handling (Safari 13.1+, all modern browsers)
     if (!grid._listenersAttached) {
-      grid.addEventListener('click', function(e) {
-        const card = e.target.closest('.face-card');
-        if (!card) return;
-        const cid = card.dataset.cluster;
-        if (cid) handleFaceClick(cid, e);
-      });
-      grid.addEventListener('touchend', function(e) {
+      grid.addEventListener('pointerup', function(e) {
         const card = e.target.closest('.face-card');
         if (!card) return;
         e.preventDefault();
         const cid = card.dataset.cluster;
         if (cid) handleFaceClick(cid, e);
-      }, { passive: false });
+      });
       grid._listenersAttached = true;
     }
 
@@ -687,9 +682,9 @@
     threshold: 0.1
   });
 
-  // Mobile touch handlers for buttons (Safari doesn't always fire onclick)
+  // Pointer event handlers for buttons (unified touch+click, works on all browsers)
   document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('selectModeBtn')?.addEventListener('touchend', function(e) {
+    document.getElementById('selectModeBtn')?.addEventListener('pointerup', function(e) {
       e.preventDefault();
       toggleSelectMode();
     });
