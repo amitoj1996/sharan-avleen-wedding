@@ -158,7 +158,7 @@
     /* Hero - dark editorial */
     .hero-image { object-fit:cover; object-position:center top; }
     @media(min-width:768px){
-      .hero-image { object-fit:contain; object-position:center center; }
+      .hero-image { object-position:center center; }
     }
 
     /* Gold shimmer */
@@ -318,7 +318,10 @@
   <!-- ==================== HERO (dark editorial) ==================== -->
   <header id="hero" class="relative h-screen overflow-hidden bg-black">
     <div class="absolute inset-0 bg-black">
-      <img src="assets/hero.jpg" alt="Sharan & Avleen" class="hero-image w-full h-full" id="heroImg" width="1080" height="1440" fetchpriority="high" decoding="async">
+      <picture>
+        <source media="(min-width:768px)" srcset="assets/hero-desktop.JPG" width="1600" height="1067">
+        <img src="assets/hero.jpg" alt="Sharan & Avleen" class="hero-image w-full h-full" id="heroImg" width="1080" height="1440" fetchpriority="high" decoding="async">
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" id="heroOverlay"></div>
     </div>
 
