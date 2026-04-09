@@ -335,7 +335,7 @@
     // Prefer full-res Google Drive URL over local thumbnail
     const driveKey = `${photo.side}_${photo.event}_${photo.filename.toLowerCase()}`;
     const driveId = driveIndex[driveKey];
-    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w0`;
+    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w1600`;
     if (photo.thumb) return photo.thumb;
     return null;
   }
@@ -825,7 +825,7 @@
   function updateLb() {
     const p=lbPhotos[lbIdx], img=document.getElementById('lightboxImg');
     const url = p.url || p.thumb;
-    const fullUrl = url; // Already full-res (=w0) from getPhotoUrl
+    const fullUrl = url.includes('lh3.googleusercontent.com') ? url.replace('=w1600', '=w0') : url;
 
     const spinner = document.getElementById('lbSpinner');
 
