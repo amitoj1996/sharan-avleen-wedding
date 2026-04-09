@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gallery — Sharan & Avleen Wedding</title>
-  <meta name="description" content="Photo gallery from Sharan & Avleen's wedding celebration">
+  <title>Gallery — Avleen & Sharan Wedding</title>
+  <meta name="description" content="Photo gallery from Avleen & Sharan's wedding celebration">
   <meta name="theme-color" content="#7B1E3A">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 
@@ -161,7 +161,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Back to Gallery
       </a>
-      <span class="font-display text-lg text-burgundy-800 italic">S & A</span>
+      <span class="font-display text-lg text-burgundy-800 italic">A & S</span>
       <a href="find-my-photos.html" class="font-ui text-[10px] text-gold-600 tracking-[0.15em] uppercase hover:text-burgundy-800 transition flex items-center gap-1.5">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         Find Me
@@ -374,7 +374,7 @@
   if (meta) {
     document.getElementById('eventTitle').textContent = meta.name + (isVideos ? ' Videos' : '');
     document.getElementById('eventDesc').textContent = meta.desc;
-    document.title = `${meta.name}${isVideos ? ' Videos' : ''} — Sharan & Avleen Wedding`;
+    document.title = `${meta.name}${isVideos ? ' Videos' : ''} — Avleen & Sharan Wedding`;
     if (currentSide) {
       document.getElementById('eventDesc').textContent =
         `${SIDE_LABELS[currentSide] || currentSide} \u2014 ${meta.desc}`;
