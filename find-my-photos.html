@@ -199,13 +199,14 @@
 
     <!-- Face Grid View -->
     <div id="gridView" class="hidden">
-      <div class="flex flex-col items-center mb-8 gap-2">
+      <div class="flex flex-col items-center mb-8 gap-3">
+        <p class="font-body text-base md:text-lg text-burgundy-700/50 italic text-center max-w-sm leading-relaxed">Want to find photos with specific people together? Tap the button below, then select their faces</p>
         <button id="selectModeBtn"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-ui text-[10px] font-medium tracking-[0.15em] uppercase transition" style="background:rgba(250,236,208,0.6);color:#7B1E3A;border:1px solid rgba(212,168,85,0.15);">
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-ui text-[10px] font-medium tracking-[0.15em] uppercase transition" style="background:rgba(250,236,208,0.6);color:#7B1E3A;border:1px solid rgba(212,168,85,0.15);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Find Photos of People Together
+          Find Group Photos
         </button>
-        <p id="selectHint" class="font-body text-sm text-burgundy-700/40 italic hidden text-center max-w-xs leading-relaxed">Select 2 or more faces below, then tap "Find Group Photos" to see photos where they appear together</p>
+        <p id="selectHint" class="font-body text-sm text-burgundy-700/50 italic hidden text-center max-w-xs leading-relaxed">Now tap the faces of the people you want to find together</p>
       </div>
       <div id="faceGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-5 md:gap-6"></div>
       <p id="statsLine" class="text-center font-ui text-[10px] text-gold-500/40 tracking-[0.2em] uppercase mt-10"></p>
@@ -468,7 +469,7 @@
       btn.style.border = '1px solid rgba(212,168,85,0.15)';
       btn.innerHTML = `
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Find Photos of People Together
+        Find Group Photos
       `;
       hint.classList.add('hidden');
       clearSelection();
