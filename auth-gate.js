@@ -14,10 +14,8 @@
     // Create gate overlay
     var gate = document.createElement('div');
     gate.id = 'authGate';
+    gate.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#7B1E3A 0%,#9B1B30 40%,#7B1E3A 100%);';
     gate.innerHTML =
-      '<div style="position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;' +
-      'background:linear-gradient(135deg,#7B1E3A 0%,#9B1B30 40%,#7B1E3A 100%);' +
-      'background-image:url(\'data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23d4a855%22 fill-opacity=%220.06%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\');">' +
         '<div style="text-align:center;padding:40px;max-width:400px;width:90%;">' +
           // Ornate top line
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">' +
@@ -50,8 +48,7 @@
             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>' +
             '<div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,85,0.4),transparent);"></div>' +
           '</div>' +
-        '</div>' +
-      '</div>';
+        '</div>';
 
     document.body.prepend(gate);
 
