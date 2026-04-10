@@ -263,7 +263,11 @@
     <div id="lbSpinner" class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
     </div>
-    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="">
+    <button id="lbDownload" onclick="downloadCurrentPhoto()" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white font-ui text-[10px] tracking-[0.15em] uppercase transition backdrop-blur-sm" aria-label="Download">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Photo
+    </button>
+    <img id="lightboxImg" class="lb-enter max-h-[82vh] max-w-[92vw] md:max-w-[80vw] object-contain rounded-lg shadow-2xl" src="" alt="">
   </div>
 
   <script>
@@ -871,6 +875,25 @@
   }
 
   function lightboxNav(d) { lbIdx=(lbIdx+d+lbPhotos.length)%lbPhotos.length; updateLb(); }
+
+  function downloadCurrentPhoto() {
+    const p = lbPhotos[lbIdx];
+    if (!p) return;
+    // Get the Drive file ID from the URL or from driveIndex
+    const driveKey = `${p.side}_${p.event}_${p.filename.toLowerCase()}`;
+    const driveId = driveIndex[driveKey];
+    if (driveId) {
+      // Hidden iframe triggers download without leaving the page
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = `https://drive.google.com/uc?export=download&id=${driveId}`;
+      document.body.appendChild(iframe);
+      setTimeout(() => iframe.remove(), 30000);
+    } else if (p.thumb) {
+      // Fallback: open the full-res image in a new tab
+      window.open(p.thumb, '_blank');
+    }
+  }
 
   function updateLb() {
     const p=lbPhotos[lbIdx], img=document.getElementById('lightboxImg');

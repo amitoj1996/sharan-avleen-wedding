@@ -235,8 +235,12 @@
     <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center">
       <div class="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full loading-spinner"></div>
     </div>
-    <img id="lightboxImg" class="lb-enter max-h-[88vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="">
-    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[88vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen></iframe>
+    <button id="lbDownload" onclick="downloadCurrentItem()" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white font-ui text-[10px] tracking-[0.15em] uppercase transition backdrop-blur-sm" aria-label="Download">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span id="lbDownloadText">Download Photo</span>
+    </button>
+    <img id="lightboxImg" class="lb-enter max-h-[82vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="">
+    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[82vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen></iframe>
   </div>
 
   <script>
@@ -557,6 +561,17 @@
   // ============================================================
   let lbIdx = 0, lbScrollY = 0;
 
+  function downloadCurrentItem() {
+    const photo = allPhotos[lbIdx];
+    if (!photo) return;
+    // Hidden iframe triggers download without leaving the page
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `https://drive.google.com/uc?export=download&id=${photo.id}`;
+    document.body.appendChild(iframe);
+    setTimeout(() => iframe.remove(), 30000);
+  }
+
   function openLb(idx) {
     lbIdx = idx;
     updateLb();
@@ -592,6 +607,9 @@
     const img = document.getElementById('lightboxImg');
     const video = document.getElementById('lightboxVideo');
     const loading = document.getElementById('lightboxLoading');
+
+    // Update download button text
+    document.getElementById('lbDownloadText').textContent = isVideos ? 'Download Video' : 'Download Photo';
 
     if (isVideos) {
       // Show video player, hide image
