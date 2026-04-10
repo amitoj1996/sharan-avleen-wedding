@@ -879,19 +879,12 @@
   function downloadCurrentPhoto() {
     const p = lbPhotos[lbIdx];
     if (!p) return;
-    // Get the Drive file ID from the URL or from driveIndex
     const driveKey = `${p.side}_${p.event}_${p.filename.toLowerCase()}`;
     const driveId = driveIndex[driveKey];
     if (driveId) {
-      // Hidden iframe triggers download without leaving the page
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = `https://drive.google.com/uc?export=download&id=${driveId}`;
-      document.body.appendChild(iframe);
-      setTimeout(() => iframe.remove(), 30000);
-    } else if (p.thumb) {
-      // Fallback: open the full-res image in a new tab
-      window.open(p.thumb, '_blank');
+      window.open(`https://drive.google.com/uc?export=download&id=${driveId}`, '_blank');
+    } else if (p.url || p.thumb) {
+      window.open(p.url || p.thumb, '_blank');
     }
   }
 

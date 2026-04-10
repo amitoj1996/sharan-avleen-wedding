@@ -564,12 +564,7 @@
   function downloadCurrentItem() {
     const photo = allPhotos[lbIdx];
     if (!photo) return;
-    // Hidden iframe triggers download without leaving the page
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = `https://drive.google.com/uc?export=download&id=${photo.id}`;
-    document.body.appendChild(iframe);
-    setTimeout(() => iframe.remove(), 30000);
+    window.open(`https://drive.google.com/uc?export=download&id=${photo.id}`, '_blank');
   }
 
   function openLb(idx) {
