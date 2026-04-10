@@ -199,12 +199,13 @@
 
     <!-- Face Grid View -->
     <div id="gridView" class="hidden">
-      <div class="flex justify-center mb-8">
+      <div class="flex flex-col items-center mb-8 gap-2">
         <button id="selectModeBtn"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-ui text-[10px] font-medium tracking-[0.15em] uppercase transition" style="background:rgba(250,236,208,0.6);color:#7B1E3A;border:1px solid rgba(212,168,85,0.15);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Find Group Photos
+          Select People for Group Search
         </button>
+        <p class="font-ui text-[8px] text-burgundy-700/30 tracking-[0.1em]">Tap a face to see their photos, or long-press to select multiple people</p>
       </div>
       <div id="faceGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-5 md:gap-6"></div>
       <p id="statsLine" class="text-center font-ui text-[10px] text-gold-500/40 tracking-[0.2em] uppercase mt-10"></p>
@@ -371,27 +372,63 @@
       </div>
     `).join('');
 
-    // Click event with debounce — works on all browsers and devices
+    // Scroll-safe tap handler: prevents accidental taps while scrolling
+    // + long-press to enter select mode
     if (!grid._listenersAttached) {
-      let lastTap = 0;
-      function onFaceTap(e) {
-        // Debounce: ignore if fired within 300ms (prevents double-fire from touch+click)
-        const now = Date.now();
-        if (now - lastTap < 300) return;
-        lastTap = now;
+      let touchStartX = 0, touchStartY = 0, isMoved = false;
+      let longPressTimer = null, longPressed = false;
+      const MOVE_THRESHOLD = 10;
+      const LONG_PRESS_MS = 500;
+
+      grid.addEventListener('touchstart', function(e) {
+        const card = e.target.closest('.face-card');
+        if (!card) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isMoved = false;
+        longPressed = false;
+
+        // Start long-press timer for entering select mode
+        longPressTimer = setTimeout(function() {
+          if (!isMoved) {
+            longPressed = true;
+            if (!selectMode) toggleSelectMode();
+            const cid = card.dataset.cluster;
+            if (cid) toggleFaceSelection(cid);
+            // Haptic feedback if available
+            if (navigator.vibrate) navigator.vibrate(30);
+          }
+        }, LONG_PRESS_MS);
+      }, { passive: true });
+
+      grid.addEventListener('touchmove', function(e) {
+        if (isMoved) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
+          isMoved = true;
+          clearTimeout(longPressTimer);
+        }
+      }, { passive: true });
+
+      grid.addEventListener('touchend', function(e) {
+        clearTimeout(longPressTimer);
+        if (longPressed || isMoved) return; // handled by long-press or was a scroll
+        const card = e.target.closest('.face-card');
+        if (!card) return;
+        e.preventDefault();
+        const cid = card.dataset.cluster;
+        if (cid) handleFaceClick(cid, e);
+      }, { passive: false });
+
+      // Desktop click still works normally
+      grid.addEventListener('click', function(e) {
         const card = e.target.closest('.face-card');
         if (!card) return;
         const cid = card.dataset.cluster;
         if (cid) handleFaceClick(cid, e);
-      }
-      grid.addEventListener('click', onFaceTap);
-      // touchend fallback for iOS Safari where click sometimes doesn't fire
-      grid.addEventListener('touchend', function(e) {
-        const card = e.target.closest('.face-card');
-        if (!card) return;
-        e.preventDefault();
-        onFaceTap(e);
-      }, { passive: false });
+      });
+
       grid._listenersAttached = true;
     }
 
@@ -420,8 +457,8 @@
       btn.style.color = '#FDF5E6';
       btn.style.border = '1px solid #6b1a33';
       btn.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Now tap the people you want to find together
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        Cancel Selection
       `;
     } else {
       btn.style.background = 'rgba(250,236,208,0.6)';
@@ -429,7 +466,7 @@
       btn.style.border = '1px solid rgba(212,168,85,0.15)';
       btn.innerHTML = `
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Find Group Photos
+        Select People for Group Search
       `;
       clearSelection();
     }
