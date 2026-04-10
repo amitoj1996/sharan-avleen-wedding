@@ -4,13 +4,13 @@
   // Already authenticated — skip
   if (localStorage.getItem('sw_auth') === 'granted') return;
 
-  // Hide everything immediately
-  document.documentElement.style.visibility = 'hidden';
-  document.documentElement.style.overflow = 'hidden';
+  // Inject a style that completely hides body content and prevents scroll
+  var lockStyle = document.createElement('style');
+  lockStyle.id = 'authLockStyle';
+  lockStyle.textContent = 'body > *:not(#authGate) { display: none !important; } html, body { overflow: hidden !important; height: 100% !important; }';
+  document.head.appendChild(lockStyle);
 
   window.addEventListener('DOMContentLoaded', function() {
-    document.documentElement.style.visibility = 'hidden';
-
     // Create gate overlay
     var gate = document.createElement('div');
     gate.id = 'authGate';
@@ -54,7 +54,6 @@
       '</div>';
 
     document.body.prepend(gate);
-    document.documentElement.style.visibility = 'visible';
 
     // Focus the input
     var input = document.getElementById('authInput');
@@ -84,7 +83,9 @@
         gate.style.opacity = '0';
         setTimeout(function() {
           gate.remove();
-          document.documentElement.style.overflow = '';
+          // Remove the lock style to reveal all page content
+          var lock = document.getElementById('authLockStyle');
+          if (lock) lock.remove();
         }, 500);
       } else {
         document.getElementById('authError').style.display = 'block';
