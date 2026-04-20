@@ -240,7 +240,7 @@
       <span id="lbDownloadText">Download Photo</span>
     </button>
     <img id="lightboxImg" class="lb-enter max-h-[82vh] max-w-[92vw] md:max-w-[85vw] object-contain rounded-lg shadow-2xl" src="" alt="">
-    <iframe id="lightboxVideo" class="lb-enter hidden max-h-[82vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl" style="width:90vw;height:80vh;max-width:1200px;" src="" allow="autoplay" allowfullscreen></iframe>
+    <video id="lightboxVideo" class="lb-enter hidden max-h-[82vh] max-w-[92vw] md:max-w-[85vw] rounded-lg shadow-2xl bg-black" style="width:90vw;height:80vh;max-width:1200px;" controls preload="metadata" playsinline></video>
   </div>
 
   <script>
@@ -352,14 +352,13 @@
   function driveFull(fileId) {
     return `https://lh3.googleusercontent.com/d/${fileId}=w1600`;
   }
-  function driveVideoPreview(fileId) {
-    return `https://drive.google.com/file/d/${fileId}/preview`;
+  // Self-hosted video origin (Unraid + Caddy)
+  const VIDEO_ORIGIN = 'https://videos.sharanwedsavleen.com';
+  function videoUrl(photo) {
+    return `${VIDEO_ORIGIN}/${currentEvent}/${currentSide}/${encodeURIComponent(photo.name)}`;
   }
-  function driveVideoView(fileId) {
-    return `https://drive.google.com/file/d/${fileId}/view`;
-  }
-  function driveVideoThumb(fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}=w400`;
+  function videoDownloadUrl(photo) {
+    return `${videoUrl(photo)}?download=1`;
   }
 
   // ============================================================
@@ -564,7 +563,11 @@
   function downloadCurrentItem() {
     const photo = allPhotos[lbIdx];
     if (!photo) return;
-    window.open(`https://drive.google.com/uc?export=download&id=${photo.id}`, '_blank');
+    if (isVideos) {
+      window.open(videoDownloadUrl(photo), '_blank');
+    } else {
+      window.open(`https://drive.google.com/uc?export=download&id=${photo.id}`, '_blank');
+    }
   }
 
   function openLb(idx) {
@@ -614,12 +617,11 @@
       video.classList.remove('lb-enter');
       loading.style.display = 'flex';
 
-      video.src = driveVideoPreview(photo.id);
-      video.onload = () => { loading.style.display = 'none'; };
-      setTimeout(() => {
-        video.classList.add('lb-enter');
-        loading.style.display = 'none';
-      }, 500);
+      video.src = videoUrl(photo);
+      video.onloadedmetadata = () => { loading.style.display = 'none'; };
+      video.onerror = () => { loading.style.display = 'none'; };
+      video.classList.add('lb-enter');
+      setTimeout(() => { loading.style.display = 'none'; }, 3000);
     } else {
       // Show image, hide video
       video.classList.add('hidden');
