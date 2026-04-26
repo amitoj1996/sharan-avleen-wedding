@@ -357,9 +357,6 @@
   function videoUrl(photo) {
     return `${VIDEO_ORIGIN}/${currentEvent}/${currentSide}/${encodeURIComponent(photo.name)}`;
   }
-  function videoDownloadUrl(photo) {
-    return `${videoUrl(photo)}?download=1`;
-  }
 
   // ============================================================
   // STATE
@@ -564,7 +561,8 @@
     const photo = allPhotos[lbIdx];
     if (!photo) return;
     if (isVideos) {
-      window.open(videoDownloadUrl(photo), '_blank');
+      if (!photo.originalId) return;
+      window.open(`https://drive.google.com/file/d/${photo.originalId}/view`, '_blank');
     } else {
       window.open(`https://drive.google.com/uc?export=download&id=${photo.id}`, '_blank');
     }
@@ -606,8 +604,14 @@
     const video = document.getElementById('lightboxVideo');
     const loading = document.getElementById('lightboxLoading');
 
-    // Update download button text
-    document.getElementById('lbDownloadText').textContent = isVideos ? 'Download Video' : 'Download Photo';
+    // Update download button — hide for videos until originalId is merged in
+    const dlBtn = document.getElementById('lbDownload');
+    document.getElementById('lbDownloadText').textContent = isVideos ? 'Download Original' : 'Download Photo';
+    if (isVideos && !photo?.originalId) {
+      dlBtn.classList.add('hidden');
+    } else {
+      dlBtn.classList.remove('hidden');
+    }
 
     if (isVideos) {
       // Show video player, hide image
