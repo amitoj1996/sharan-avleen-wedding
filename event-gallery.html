@@ -86,10 +86,14 @@
 
     /* Photo grid — JS masonry with absolute positioning (no column reflow on append) */
     .photo-grid {
-      position: relative;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 22vw, 250px), 1fr));
+      grid-auto-rows: 10px;
+      grid-auto-flow: dense;
     }
     .photo-item {
-      position: absolute;
+      grid-row-end: span 26;   /* default before the image measures */
       opacity: 0;
     }
     /* Staggered rise+fade cascade for newly loaded photos (matches the flagship) */
@@ -103,22 +107,23 @@
     }
     .photo-item img {
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
-      border-radius: 8px;
     }
-    @media(min-width:1024px) { .photo-item { margin-bottom: 14px; } }
 
-    /* Photo card */
+    /* Photo card — fills its grid cell (sized by row-span), image covers it */
     .photo-card {
-      position:relative; overflow:hidden; border-radius:8px; cursor:pointer;
-      background: #f0e6d4;
+      position:relative; overflow:hidden; border-radius:6px; cursor:pointer;
+      background: #f0e6d4; height: 100%;
+      box-shadow: 0 0 0 1px rgba(212,168,85,0.18);
+      transition: box-shadow .4s, transform .4s;
     }
     .photo-card img {
-      transition:transform 1s cubic-bezier(0.25,0.46,0.45,0.94);
-      display:block; width:100%;
+      transition:transform .7s cubic-bezier(0.2,0,0.2,1);
+      display:block; width:100%; height:100%; object-fit:cover;
     }
-    .photo-card:hover img { transform:scale(1.05); }
+    .photo-card:hover { box-shadow: 0 0 0 1px rgba(212,168,85,0.5), 0 14px 40px rgba(61,10,26,0.22); transform: translateY(-2px); }
+    .photo-card:hover img { transform:scale(1.06); }
     .photo-card .overlay {
       position:absolute; inset:0;
       background:linear-gradient(to top, rgba(123,30,58,0.4) 0%, transparent 40%);
@@ -275,63 +280,26 @@
   // ============================================================
   // MASONRY LAYOUT ENGINE
   // ============================================================
-  function getMasonryCols() { return window.innerWidth >= 1024 ? 4 : window.innerWidth >= 640 ? 3 : 2; }
-  function getMasonryGap() { return window.innerWidth >= 1024 ? 14 : window.innerWidth >= 640 ? 12 : 10; }
-
-  function layoutMasonry(container, startFrom) {
-    const cols = getMasonryCols();
-    const gap = getMasonryGap();
-    const containerWidth = container.clientWidth;
-    if (containerWidth === 0) return;
-    const colWidth = (containerWidth - gap * (cols - 1)) / cols;
-
-    const items = container.querySelectorAll('.photo-item');
-    if (!container._colHeights || startFrom === 0) {
-      container._colHeights = new Array(cols).fill(0);
-    }
-
-    for (let i = startFrom; i < items.length; i++) {
-      const item = items[i];
-      const shortest = container._colHeights.indexOf(Math.min(...container._colHeights));
-      const x = shortest * (colWidth + gap);
-      const y = container._colHeights[shortest];
-
-      item.style.width = colWidth + 'px';
-      item.style.left = x + 'px';
-      item.style.top = y + 'px';
-
-      const img = item.querySelector('img');
-      const itemHeight = (img && img.naturalHeight && img.naturalWidth)
-        ? (img.naturalHeight / img.naturalWidth) * colWidth
-        : colWidth * 0.75;
-
-      container._colHeights[shortest] += itemHeight + gap;
-    }
-
-    container.style.height = Math.max(...container._colHeights) + 'px';
+  // MASONRY: CSS grid + per-item row-span from each image's real aspect
+  // (mirrors the flagship gallery — no JS absolute positioning).
+  const MASONRY_ROW = 10;   // must match grid-auto-rows in CSS
+  function setSpan(item) {
+    const img = item.querySelector('img');
+    if (!img) return;
+    const w = item.clientWidth || 220;
+    const ratio = (img.naturalHeight && img.naturalWidth) ? img.naturalHeight / img.naturalWidth : 1.25;
+    const h = Math.max(120, Math.round(w * ratio));
+    item.style.gridRowEnd = 'span ' + Math.ceil(h / MASONRY_ROW);
   }
-
-  // Debounced re-layout: coalesces image load events into a single rAF
-  let _layoutRafId = null;
-  const _dirtyContainers = new Set();
-  function scheduleMasonryRelayout(container) {
-    _dirtyContainers.add(container);
-    if (_layoutRafId) return;
-    _layoutRafId = requestAnimationFrame(() => {
-      _dirtyContainers.forEach(c => { c._colHeights = null; layoutMasonry(c, 0); });
-      _dirtyContainers.clear();
-      _layoutRafId = null;
-    });
-  }
+  // Back-compat no-op shims for existing callers
+  function layoutMasonry() {}
+  function scheduleMasonryRelayout() {}
 
   let _resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(_resizeTimer);
     _resizeTimer = setTimeout(() => {
-      document.querySelectorAll('.photo-grid').forEach(c => {
-        c._colHeights = null;
-        layoutMasonry(c, 0);
-      });
+      document.querySelectorAll('.photo-item').forEach(setSpan);
     }, 200);
   });
 
@@ -493,10 +461,11 @@
 
       grid.appendChild(div);
 
-      // Debounced re-layout when image loads with real dimensions
+      // Set the grid row-span from the image's real aspect (CSS-grid masonry)
       const img = div.querySelector('img');
       if (img) {
-        img.addEventListener('load', () => scheduleMasonryRelayout(grid), { once: true });
+        if (img.complete && img.naturalWidth) setSpan(div);
+        else img.addEventListener('load', () => setSpan(div), { once: true });
       }
     }
 
