@@ -289,6 +289,31 @@
     }
     .music-btn:hover .music-tooltip { opacity:1; }
 
+    /* Cinematic event banners — full-bleed hero image per event (burgundy/cream) */
+    .event-banner {
+      position: relative; overflow: hidden; border-radius: 16px;
+      aspect-ratio: 21 / 9; isolation: isolate;
+      box-shadow: 0 30px 90px rgba(61,10,26,0.40);
+    }
+    .event-banner-img {
+      position: absolute; inset: -12% 0; width: 100%; height: 124%;
+      object-fit: cover; object-position: center; will-change: transform;
+    }
+    .event-banner-veil {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(0deg, rgba(61,10,26,0.90) 3%, rgba(123,30,58,0.42) 42%, rgba(123,30,58,0.05) 72%, transparent 100%);
+    }
+    .event-banner-text {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+      text-align: center; padding: 0 1.5rem clamp(1.5rem, 4vw, 3rem);
+    }
+    .event-banner-text .section-title { color: #FDF5E6; text-shadow: 0 4px 34px rgba(0,0,0,0.55); }
+    .event-banner-text .section-date { color: #edce6a; }
+    .event-banner-text .section-desc { color: rgba(253,245,230,0.85); text-shadow: 0 2px 18px rgba(0,0,0,0.5); }
+    .event-banner-text .section-count { color: rgba(237,206,106,0.78); }
+    @media(max-width:768px) { .event-banner { aspect-ratio: 4 / 5; } }
+
     @media(prefers-reduced-motion:reduce) {
       .cursor-dot{display:none} .gold-shimmer,.mandala-spin,.scroll-indicator{animation:none}
       .music-playing .eq-bar{animation:none} .photo-card img{transition:none}
@@ -637,19 +662,22 @@
       const hasG=ev.sides.girl!==null, hasB=ev.sides.boy!==null, hasBoth=hasG&&hasB;
       const def = hasG ? 'girl' : 'boy';
       activeSides[ev.id] = def;
+      const bSide = ev.sides[def];
+      const bannerSrc = (bSide && bSide.photos && bSide.photos[0]) ? bSide.photos[0].src : 'assets/hero.jpg';
 
       return `
         <section id="${ev.id}" class="mb-32 md:mb-44 scroll-mt-20">
-          <div class="text-center mb-14 md:mb-18 section-glow">
-            <span class="section-icon mb-5 flex justify-center">${ev.icon}</span>
-            <h2 class="section-title font-display text-5xl md:text-8xl lg:text-9xl text-burgundy-800 font-black mb-4 relative z-10" style="line-height:0.85">${ev.name}</h2>
-            <div class="title-line shimmer-line mx-auto mb-4"></div>
-            <p class="section-date font-ui text-[9px] md:text-[10px] text-gold-600/70 tracking-[0.3em] uppercase mb-5">${ev.date}</p>
-            <div class="ornate-divider w-32 md:w-48 mx-auto mb-5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#D4A855"/></svg>
+          <div class="event-banner mb-12 md:mb-16">
+            <img class="event-banner-img" src="${bannerSrc}" alt="${ev.name}" loading="lazy" decoding="async" onerror="this.style.display='none'">
+            <div class="event-banner-veil"></div>
+            <div class="event-banner-text section-glow">
+              <span class="section-icon mb-4 flex justify-center">${ev.icon}</span>
+              <h2 class="section-title font-display text-5xl md:text-8xl lg:text-9xl font-black mb-4 relative z-10" style="line-height:0.85">${ev.name}</h2>
+              <div class="title-line shimmer-line mx-auto mb-4"></div>
+              <p class="section-date font-ui text-[9px] md:text-[10px] tracking-[0.3em] uppercase mb-4">${ev.date}</p>
+              <p class="section-desc font-body text-base md:text-xl italic max-w-md mx-auto">${ev.desc}</p>
+              <p class="section-count font-ui text-[10px] tracking-[0.2em] uppercase mt-4"><span class="counter-num" data-target="${ev.count}">0</span> photos captured</p>
             </div>
-            <p class="section-desc section-quote font-body text-lg md:text-xl text-burgundy-700/40 italic max-w-md mx-auto">${ev.desc}</p>
-            <p class="section-count font-ui text-[10px] text-gold-500/40 tracking-[0.2em] uppercase mt-5"><span class="counter-num" data-target="${ev.count}">0</span> photos captured</p>
           </div>
 
           ${hasBoth ? `
@@ -714,6 +742,11 @@
     CFG.events.forEach(ev => {
       const s = document.getElementById(ev.id);
       if (!s) return;
+
+      const _bimg = s.querySelector('.event-banner-img');
+      if (_bimg) gsap.to(_bimg,{yPercent:12,ease:'none',scrollTrigger:{trigger:s.querySelector('.event-banner'),start:'top bottom',end:'bottom top',scrub:1.5}});
+      const _bwrap = s.querySelector('.event-banner');
+      if (_bwrap) gsap.fromTo(_bwrap,{opacity:0,scale:0.975},{opacity:1,scale:1,duration:1.1,ease:'power3.out',scrollTrigger:{trigger:_bwrap,start:'top 86%'}});
 
       gsap.fromTo(s.querySelector('.section-icon'),{scale:0,rotation:-20,opacity:0},{scale:1,rotation:0,opacity:1,duration:0.8,ease:'back.out(2)',scrollTrigger:{trigger:s,start:'top 80%'}});
       gsap.fromTo(s.querySelector('.section-title'),{y:60,opacity:0,filter:'blur(6px)'},{y:0,opacity:1,filter:'blur(0px)',duration:1,ease:'power3.out',scrollTrigger:{trigger:s,start:'top 78%'}});
